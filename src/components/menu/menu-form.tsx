@@ -121,4 +121,5 @@ export function MenuForm({ onSubmit, initialData, onCancel }: MenuFormProps) {
         </div>
       </form>
     </Form>
-  
+  );
+}
