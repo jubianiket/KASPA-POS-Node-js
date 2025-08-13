@@ -10,6 +10,14 @@ import { DollarSign, ShoppingCart, ArrowUp, ArrowDown } from 'lucide-react';
 import { subDays, format, startOfDay } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+
+const statusColors: Record<string, string> = {
+  received: 'bg-blue-500',
+  preparing: 'bg-yellow-500',
+  ready: 'bg-green-500',
+  completed: 'bg-gray-500',
+};
 
 export default function DashboardPage() {
   const [orders, setOrders] = React.useState<Order[]>([]);
@@ -19,7 +27,7 @@ export default function DashboardPage() {
     const fetchOrders = async () => {
       setLoading(true);
       const allOrders = await getOrders();
-      setOrders(allOrders.filter(o => o.status === 'completed'));
+      setOrders(allOrders);
       setLoading(false);
     };
 
@@ -34,6 +42,9 @@ export default function DashboardPage() {
     revenueOverTime,
     topSellingItems,
     revenueGrowth,
+    todayOrdersByType,
+    todayOrdersByStatus,
+    totalOrdersToday
   } = React.useMemo(() => {
     if (orders.length === 0) {
       return {
@@ -44,6 +55,9 @@ export default function DashboardPage() {
         revenueOverTime: [],
         topSellingItems: [],
         revenueGrowth: 0,
+        todayOrdersByType: {},
+        todayOrdersByStatus: {},
+        totalOrdersToday: 0
       };
     }
 
@@ -51,23 +65,41 @@ export default function DashboardPage() {
     const yesterday = startOfDay(subDays(new Date(), 1));
 
     let revenueToday = 0;
-    let ordersToday = 0;
+    let ordersToday = 0; // Completed orders today
     let revenueYesterday = 0;
 
     const completedOrders = orders.filter(o => o.status === 'completed');
 
     const totalRevenue = completedOrders.reduce((acc, order) => acc + (order.total || 0), 0);
     const totalOrders = completedOrders.length;
+    
+    const todayOrders = orders.filter(order => startOfDay(new Date(order.timestamp)).getTime() === today.getTime());
+    const totalOrdersToday = todayOrders.length;
+
+    const todayOrdersByType: Record<string, number> = {};
+    const todayOrdersByStatus: Record<string, number> = {};
+
+
+    todayOrders.forEach(order => {
+        // Type bifurcation
+        todayOrdersByType[order.type] = (todayOrdersByType[order.type] || 0) + 1;
+        
+        // Status bifurcation
+        todayOrdersByStatus[order.status] = (todayOrdersByStatus[order.status] || 0) + 1;
+
+        if (order.status === 'completed') {
+            revenueToday += order.total || 0;
+            ordersToday++;
+        }
+    });
 
     completedOrders.forEach(order => {
       const orderDate = startOfDay(new Date(order.timestamp));
-      if (orderDate.getTime() === today.getTime()) {
-        revenueToday += order.total || 0;
-        ordersToday++;
-      } else if (orderDate.getTime() === yesterday.getTime()) {
+      if (orderDate.getTime() === yesterday.getTime()) {
         revenueYesterday += order.total || 0;
       }
     });
+
 
     // Revenue over last 7 days
     const revenueOverTimeData: { date: string; revenue: number }[] = [];
@@ -108,6 +140,9 @@ export default function DashboardPage() {
       revenueOverTime: revenueOverTimeData,
       topSellingItems: topSellingItemsData,
       revenueGrowth,
+      todayOrdersByType,
+      todayOrdersByStatus,
+      totalOrdersToday
     };
   }, [orders]);
 
@@ -183,8 +218,23 @@ export default function DashboardPage() {
               <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">+{ordersToday}</div>
-              <p className="text-xs text-muted-foreground">Completed orders today.</p>
+              <div className="text-2xl font-bold">+{totalOrdersToday}</div>
+              <div className="space-y-1 mt-1 text-xs">
+                 <div className="text-muted-foreground font-semibold">By Type:</div>
+                 <div className="flex gap-2">
+                    {Object.entries(todayOrdersByType).map(([type, count]) => (
+                        <span key={type}>{type.charAt(0).toUpperCase() + type.slice(1)}: {count}</span>
+                    ))}
+                 </div>
+                 <div className="text-muted-foreground font-semibold pt-1">By Status:</div>
+                 <div className="flex flex-wrap gap-1">
+                    {Object.entries(todayOrdersByStatus).map(([status, count]) => (
+                        <Badge key={status} className={`${statusColors[status]} text-white text-xs`}>
+                            {status.charAt(0).toUpperCase() + status.slice(1)}: {count}
+                        </Badge>
+                    ))}
+                 </div>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -232,3 +282,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
