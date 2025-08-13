@@ -11,6 +11,7 @@ import { subDays, format, startOfDay } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 const statusColors: Record<string, string> = {
   received: 'bg-blue-500',
@@ -228,11 +229,16 @@ export default function DashboardPage() {
                  </div>
                  <div className="text-muted-foreground font-semibold pt-1">By Status:</div>
                  <div className="flex flex-wrap gap-1">
-                    {Object.entries(todayOrdersByStatus).map(([status, count]) => (
-                        <Badge key={status} className={`${statusColors[status]} text-white text-xs`}>
-                            {status.charAt(0).toUpperCase() + status.slice(1)}: {count}
-                        </Badge>
-                    ))}
+                    {Object.entries(todayOrdersByStatus).map(([status, count]) => {
+                       const href = status === 'completed' ? '/history' : '/?tab=active-orders';
+                       return (
+                         <Link key={status} href={href}>
+                           <Badge className={`${statusColors[status]} text-white text-xs cursor-pointer hover:ring-2 hover:ring-offset-2 hover:ring-ring`}>
+                               {status.charAt(0).toUpperCase() + status.slice(1)}: {count}
+                           </Badge>
+                         </Link>
+                       )
+                    })}
                  </div>
               </div>
             </CardContent>
@@ -282,5 +288,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

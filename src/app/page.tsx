@@ -26,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useSearchParams, useRouter } from 'next/navigation';
 
 interface OrderItem extends MenuItem {
   quantity: number;
@@ -44,7 +45,7 @@ export default function PosPage() {
   const [loading, setLoading] = React.useState(true);
   const [activeCategory, setActiveCategory] = React.useState('All');
   const [currentOrder, setCurrentOrder] = React.useState<Order | null>(null);
-  const [orderType, setOrderType] = React.useState<'dine-in' | 'delivery'>('dine-in');
+  const [orderType, setOrderType] = React.useState<'dine-in' | 'delivery' | 'active-orders'>('dine-in');
   const [selectedTable, setSelectedTable] = React.useState('1');
   const [deliveryAddress, setDeliveryAddress] = React.useState('');
   const [deliveryPhone, setDeliveryPhone] = React.useState('');
@@ -54,6 +55,15 @@ export default function PosPage() {
   const [billOrder, setBillOrder] = React.useState<Order | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [activeOrders, setActiveOrders] = React.useState<Order[]>([]);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'active-orders') {
+      setOrderType('active-orders');
+    }
+  }, [searchParams]);
 
   const occupiedTables = React.useMemo(() => {
     return activeOrders
@@ -188,7 +198,7 @@ export default function PosPage() {
            items: newItems,
            status: 'received',
            timestamp: new Date().toISOString(),
-           type: orderType,
+           type: orderType as 'dine-in' | 'delivery',
            address: orderType === 'delivery' ? deliveryAddress : undefined,
            phone_no: orderType === 'delivery' ? deliveryPhone : undefined,
            table: orderType === 'dine-in' ? parseInt(selectedTable, 10) : undefined,
@@ -336,19 +346,20 @@ export default function PosPage() {
           </div>
           <div className="flex items-center gap-2">
             <Tabs value={orderType} onValueChange={(v) => {
-              const newOrderType = v as any;
-              if (newOrderType !== 'active-orders') {
-                  setOrderType(newOrderType);
-                  setCurrentOrder(null);
-                  if (newOrderType === 'delivery') {
-                    setSelectedTable('');
-                  } else {
-                    setDeliveryAddress('');
-                    setDeliveryPhone('');
-                  }
-              } else {
-                 setOrderType(newOrderType);
+              const newOrderType = v as 'dine-in' | 'delivery' | 'active-orders';
+              setOrderType(newOrderType);
+              if (newOrderType === 'dine-in' || newOrderType === 'delivery') {
+                setCurrentOrder(null);
+                if (newOrderType === 'delivery') {
+                  setSelectedTable('');
+                } else {
+                  setDeliveryAddress('');
+                  setDeliveryPhone('');
+                }
               }
+              const url = new URL(window.location.href);
+              url.searchParams.set('tab', newOrderType);
+              router.replace(url.toString(), { scroll: false });
             }} className="w-full sm:w-auto">
               <TabsList>
                 <TabsTrigger value="dine-in">Dine In</TabsTrigger>
@@ -552,17 +563,10 @@ export default function PosPage() {
               <p>Total</p>
               <p>Rs.{totalWithTax.toFixed(2)}</p>
             </div>
-            {!isOrderSent ? (
-              <div className="grid grid-cols-2 gap-4">
-                <Button size="lg" variant="outline">Charge</Button>
-                <Button size="lg" onClick={handleSendToKitchen}>Send to Kitchen</Button>
-              </div>
-            ) : (
-               <div className="grid grid-cols-2 gap-4">
-                <Button size="lg" variant="secondary" onClick={handleGenerateBill} disabled={currentOrder.status !== 'completed'}>Generate Bill</Button>
-                <Button size="lg" onClick={handleSendToKitchen}>Add More Items</Button>
-              </div>
-            )}
+            <div className="grid grid-cols-2 gap-4">
+              <Button size="lg" variant="secondary" onClick={handleGenerateBill} disabled={currentOrder.status !== 'completed'}>Generate Bill</Button>
+              <Button size="lg" onClick={handleSendToKitchen}>Add More Items</Button>
+            </div>
           </div>
         )}
       </aside>
