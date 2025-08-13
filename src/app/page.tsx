@@ -38,8 +38,9 @@ export default function PosPage() {
   }, []);
 
   const filteredItems = React.useMemo(() => {
-    if (activeCategory === 'All') return menuItems;
-    return menuItems.filter((item) => item.category === activeCategory);
+    const itemsWithPrice = menuItems.filter(item => typeof item.price === 'number');
+    if (activeCategory === 'All') return itemsWithPrice;
+    return itemsWithPrice.filter((item) => item.category === activeCategory);
   }, [activeCategory, menuItems]);
 
   const handleAddToOrder = (item: MenuItem) => {
