@@ -64,8 +64,8 @@ export function AppSidebar() {
   return (
     <Sidebar variant="sidebar" collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center gap-2 p-2 justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between p-2">
+          <div className="flex items-center gap-2 overflow-hidden">
             <div className="bg-primary p-2 rounded-lg">
               <KaspaLogo />
             </div>
