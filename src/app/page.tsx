@@ -274,7 +274,6 @@ export default function PosPage() {
   const handleBillClosed = () => {
     setIsBillVisible(false);
     setBillOrder(null);
-    setCurrentOrder(null);
   };
 
   const handleGenerateBill = () => {
