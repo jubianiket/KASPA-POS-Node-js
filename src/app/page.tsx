@@ -314,9 +314,9 @@ export default function PosPage() {
   const handleGenerateBill = async () => {
     if (currentOrder) {
       try {
-        await updateOrderStatus(currentOrder.id, 'completed');
         setBillOrder({ ...currentOrder, status: 'completed' }); 
         setIsBillVisible(true);
+        await updateOrderStatus(currentOrder.id, 'completed');
         setActiveOrders(prev => prev.filter(o => o.id !== currentOrder.id));
         setCurrentOrder(null);
       } catch (error) {
@@ -412,7 +412,12 @@ export default function PosPage() {
                                       </>
                                     )}
                                 </div>
-                                <Button size="sm" onClick={() => setCurrentOrder(order)}>View Order</Button>
+                                <div className="flex items-center gap-2">
+                                  <Badge className={`${statusColors[order.status]} text-white`}>
+                                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                  </Badge>
+                                  <Button size="sm" onClick={() => setCurrentOrder(order)}>View Order</Button>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -565,7 +570,7 @@ export default function PosPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Button size="lg" variant="secondary" onClick={handleGenerateBill} disabled={currentOrder.status !== 'completed'}>Generate Bill</Button>
-              <Button size="lg" onClick={handleSendToKitchen}>Add More Items</Button>
+              <Button size="lg" onClick={handleSendToKitchen}>{isOrderSent ? 'Add More Items' : 'Send to Kitchen'}</Button>
             </div>
           </div>
         )}
