@@ -12,8 +12,9 @@ export type Order = {
   orderNumber: number;
   type: 'dine-in' | 'delivery';
   table?: number;
-  phone?: string;
-  address?: string;
+  phone_no?: string;
+  flat_no?: string;
+  building_no?: string;
   items: {
     name: string;
     quantity: number;
@@ -47,7 +48,7 @@ export const menuItems: MenuItem[] = [
   { id: 14, name: 'Fresh Orange Juice', price: 5.00, category: 'Beverages', portion: '16oz' },
 ];
 
-export const orders: Omit<Order, 'phone' | 'address'>[] = [
+export const orders: Omit<Order, 'phone_no' | 'flat_no' | 'building_no'>[] = [
   {
     id: 'a1b2c3d4',
     orderNumber: 101,

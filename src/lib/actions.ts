@@ -70,8 +70,9 @@ export async function getOrders(): Promise<Order[]> {
     subtotal: order.sub_total,
     tax: order.gst,
     total: order.total,
-    phone: order.phone,
-    address: order.address
+    phone_no: order.phone_no,
+    flat_no: order.flat_no,
+    building_no: order.building_no,
   }));
 }
 
@@ -80,11 +81,14 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
   updatePayload.status = status;
 
   // Ensure phone and address are correctly named for the database
-  if (updatePayload.phone) {
-    updatePayload.phone = updatePayload.phone;
+  if (updatePayload.phone_no) {
+    updatePayload.phone_no = updatePayload.phone_no;
   }
-  if (updatePayload.address) {
-    updatePayload.address = updatePayload.address;
+  if (updatePayload.flat_no) {
+    updatePayload.flat_no = updatePayload.flat_no;
+  }
+  if (updatePayload.building_no) {
+    updatePayload.building_no = updatePayload.building_no;
   }
   
   const { data, error } = await supabaseAdmin
