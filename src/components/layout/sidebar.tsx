@@ -77,7 +77,7 @@ export function AppSidebar() {
           className="flex items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm"
         >
           <Avatar className="h-8 w-8">
-            <AvatarImage src="https://placehold.co/40x40.png" alt="User" />
+            <AvatarImage src="https://placehold.co/40x40.png" alt="User" data-ai-hint="user avatar" />
             <AvatarFallback>JD</AvatarFallback>
           </Avatar>
           <div className="flex flex-col truncate">
