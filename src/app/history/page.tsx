@@ -168,7 +168,7 @@ export default function HistoryPage() {
                       {order.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right font-semibold" dangerouslySetInnerHTML={{ __html: `&#8377;${order.total?.toFixed(2) || '0.00'}` }} />
+                  <TableCell className="text-right font-semibold">Rs.{order.total?.toFixed(2) || '0.00'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

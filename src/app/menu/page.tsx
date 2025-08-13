@@ -26,7 +26,7 @@ export default async function MenuBoardPage() {
                   <div key={item.id} className="flex justify-between items-baseline gap-4">
                     <h3 className="font-body text-xl font-bold">{item.name}</h3>
                     <div className="flex-grow border-b border-dashed border-muted-foreground/50 mx-2"></div>
-                    <p className="font-body text-xl font-bold text-primary" dangerouslySetInnerHTML={{ __html: `&#8377;${item.price.toFixed(2)}` }} />
+                    <p className="font-body text-xl font-bold text-primary">Rs.{item.price.toFixed(2)}</p>
                   </div>
                 ))}
               </div>

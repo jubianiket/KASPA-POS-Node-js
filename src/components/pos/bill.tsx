@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -33,6 +34,7 @@ export function Bill({ order, orderItems, subtotal, tax, total, onBillClose }: B
       <DialogContent className="max-w-sm p-0 print:shadow-none print:border-none">
         <DialogHeader className="p-6 pb-0 print:hidden">
             <DialogTitle className="font-headline text-2xl text-center">Order Bill</DialogTitle>
+            <DialogDescription className="text-center">A summary of the customer's order.</DialogDescription>
         </DialogHeader>
         <div id="bill-content" className="p-6 font-mono text-sm text-black bg-white">
           <header className="text-center mb-4">
@@ -57,7 +59,7 @@ export function Bill({ order, orderItems, subtotal, tax, total, onBillClose }: B
               <div key={item.id} className="grid grid-cols-[1fr_auto_auto] gap-x-2">
                 <span>{item.name} {item.portion && `(${item.portion})`}</span>
                 <span className="text-right">{item.quantity}</span>
-                <span className="text-right" dangerouslySetInnerHTML={{ __html: `&#8377;${(item.price * item.quantity).toFixed(2)}` }} />
+                <span className="text-right">Rs.{(item.price * item.quantity).toFixed(2)}</span>
               </div>
             ))}
           </main>
@@ -67,16 +69,16 @@ export function Bill({ order, orderItems, subtotal, tax, total, onBillClose }: B
           <footer className="space-y-1">
             <div className="flex justify-between">
               <span>Subtotal:</span>
-              <span dangerouslySetInnerHTML={{ __html: `&#8377;${subtotal.toFixed(2)}` }} />
+              <span>Rs.{subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span>Tax (5%):</span>
-              <span dangerouslySetInnerHTML={{ __html: `&#8377;${tax.toFixed(2)}` }} />
+              <span>Rs.{tax.toFixed(2)}</span>
             </div>
              <Separator className="my-1 bg-black" />
             <div className="flex justify-between font-bold text-base">
               <span>Total:</span>
-              <span dangerouslySetInnerHTML={{ __html: `&#8377;${total.toFixed(2)}` }} />
+              <span>Rs.{total.toFixed(2)}</span>
             </div>
              <Separator className="my-2 bg-black" />
             <p className="text-center">Thank you for your visit!</p>
