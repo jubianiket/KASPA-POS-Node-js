@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Minus, Trash2, X, Clock } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Clock, Search } from 'lucide-react';
 import { type MenuItem, type Order, menuCategories } from '@/lib/data';
 import { getMenuItems, createOrder, getOrders, updateOrderStatus } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -14,6 +14,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/lib/supabase';
 import { Bill } from '@/components/pos/bill';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 interface OrderItem extends MenuItem {
   quantity: number;
@@ -38,6 +47,7 @@ export default function PosPage() {
   const { toast } = useToast();
   const prevOrderStatus = React.useRef<Order['status'] | undefined>();
   const [billOrder, setBillOrder] = React.useState<Order | null>(null);
+  const [searchQuery, setSearchQuery] = React.useState('');
   
   React.useEffect(() => {
     if (currentOrder?.status === 'completed' && prevOrderStatus.current !== 'completed') {
@@ -77,12 +87,9 @@ export default function PosPage() {
               status: updatedOrder.status,
             };
 
-            setCurrentOrder(prevOrder => {
-              if (prevOrder && prevOrder.id === formattedOrder.id) {
-                return formattedOrder;
-              }
-              return prevOrder;
-            });
+            if (currentOrder && currentOrder.id === formattedOrder.id) {
+               setCurrentOrder(formattedOrder);
+            }
           }
         }
       )
@@ -91,7 +98,7 @@ export default function PosPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [currentOrder]);
 
   const orderItems = currentOrder?.items.map(orderItem => {
     const menuItem = menuItems.find(mi => mi.name === orderItem.name);
@@ -118,9 +125,19 @@ export default function PosPage() {
 
   const filteredItems = React.useMemo(() => {
     const itemsWithPrice = menuItems.filter(item => typeof item.price === 'number');
-    if (activeCategory === 'All') return itemsWithPrice;
-    return itemsWithPrice.filter((item) => item.category === activeCategory);
-  }, [activeCategory, menuItems]);
+    let categoryFilteredItems = activeCategory === 'All'
+        ? itemsWithPrice
+        : itemsWithPrice.filter((item) => item.category === activeCategory);
+
+    if (searchQuery) {
+        return categoryFilteredItems.filter(item =>
+            item.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }
+
+    return categoryFilteredItems;
+  }, [activeCategory, menuItems, searchQuery]);
+
 
  const handleAddToOrder = (item: MenuItem) => {
     const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
@@ -262,7 +279,7 @@ export default function PosPage() {
       {isBillVisible && billOrder && (
           <Bill order={billOrder} orderItems={billOrderItems} total={billTotal} tax={billTax} subtotal={billSubtotal} onBillClose={handleBillClosed} />
       )}
-      <div className="flex-1 p-4 lg:p-6 space-y-4 lg:space-y-6 overflow-y-auto">
+      <div className="flex-1 p-4 lg:p-6 space-y-4 lg:space-y-6 flex flex-col overflow-y-auto">
         <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-headline font-bold">Point of Sale</h1>
@@ -291,53 +308,64 @@ export default function PosPage() {
           </div>
         </header>
 
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={activeCategory === 'All' ? 'default' : 'outline'}
-            onClick={() => setActiveCategory('All')}
-            className="rounded-full"
-          >
-            All
-          </Button>
-          {menuCategories.map((category) => (
+        <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    placeholder="Search for an item..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 w-full"
+                />
+            </div>
+            <div className="flex items-center gap-2 overflow-x-auto pb-2">
             <Button
-              key={category}
-              variant={activeCategory === category ? 'default' : 'outline'}
-              onClick={() => setActiveCategory(category)}
-              className="rounded-full"
+                variant={activeCategory === 'All' ? 'default' : 'outline'}
+                onClick={() => setActiveCategory('All')}
+                className="rounded-full flex-shrink-0"
             >
-              {category}
+                All
             </Button>
-          ))}
+            {menuCategories.map((category) => (
+                <Button
+                key={category}
+                variant={activeCategory === category ? 'default' : 'outline'}
+                onClick={() => setActiveCategory(category)}
+                className="rounded-full flex-shrink-0"
+                >
+                {category}
+                </Button>
+            ))}
+            </div>
         </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        
+        <div className="flex-grow overflow-auto border rounded-lg">
           {loading ? (
-            Array.from({ length: 10 }).map((_, i) => (
-              <Card key={i} className="overflow-hidden flex flex-col">
-                 <CardContent className="p-4 flex-grow space-y-2">
-                  <Skeleton className="h-5 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
-                </CardContent>
-                <CardFooter className="p-4 pt-0">
-                  <Skeleton className="h-6 w-1/4" />
-                </CardFooter>
-              </Card>
-            ))
+             <div className="p-4 space-y-4">
+                {Array.from({ length: 10 }).map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4">
+                        <Skeleton className="h-5 flex-grow" />
+                        <Skeleton className="h-5 w-20" />
+                    </div>
+                ))}
+            </div>
           ) : (
-            filteredItems.map((item) => (
-              <Card key={item.id} className="flex flex-col group cursor-pointer" onClick={() => handleAddToOrder(item)}>
-                <CardContent className="p-3 flex-grow flex flex-col justify-center">
-                  <h3 className="text-base font-semibold font-headline text-center">{item.name}</h3>
-                </CardContent>
-                <CardFooter className="flex justify-between items-center p-3 pt-0">
-                   <p className="text-base font-bold text-primary">₹{item.price ? item.price.toFixed(2) : 'N/A'}</p>
-                  <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0">
-                    <Plus className="h-5 w-5"/>
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))
+             <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Item</TableHead>
+                    <TableHead className="text-right">Price</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredItems.map((item) => (
+                    <TableRow key={item.id} onClick={() => handleAddToOrder(item)} className="cursor-pointer">
+                      <TableCell className="font-medium">{item.name}</TableCell>
+                      <TableCell className="text-right font-semibold text-primary">₹{item.price ? item.price.toFixed(2) : 'N/A'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
           )}
         </div>
       </div>
