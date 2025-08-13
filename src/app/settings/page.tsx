@@ -25,11 +25,31 @@ import { useToast } from '@/hooks/use-toast';
 import { getSettings, updateSettings } from '@/lib/actions';
 import type { RestaurantSettings } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import { Check } from 'lucide-react';
+
+const themeColors = [
+  { name: 'Orange', hsl: '29 100% 50%' },
+  { name: 'Blue', hsl: '221 83% 53%' },
+  { name: 'Green', hsl: '142 71% 45%' },
+  { name: 'Purple', hsl: '262 84% 58%' },
+];
 
 export default function SettingsPage() {
   const [settings, setSettings] = React.useState<Partial<RestaurantSettings>>({});
   const [loading, setLoading] = React.useState(true);
   const { toast } = useToast();
+
+  const applyTheme = (theme: Partial<RestaurantSettings>) => {
+    if (theme.dark_mode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    if (theme.theme_color) {
+      document.documentElement.style.setProperty('--primary', theme.theme_color);
+    }
+  };
 
   React.useEffect(() => {
     const fetchSettings = async () => {
@@ -37,11 +57,7 @@ export default function SettingsPage() {
       const fetchedSettings = await getSettings();
       if (fetchedSettings) {
         setSettings(fetchedSettings);
-        if (fetchedSettings.dark_mode) {
-           document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
+        applyTheme(fetchedSettings);
       }
       setLoading(false);
     };
@@ -54,15 +70,18 @@ export default function SettingsPage() {
   };
   
   const handleSwitchChange = (checked: boolean, id: keyof RestaurantSettings) => {
-    setSettings(prev => ({ ...prev, [id]: checked }));
+    const newSettings = { ...settings, [id]: checked };
+    setSettings(newSettings);
     if (id === 'dark_mode') {
-       if (checked) {
-        document.documentElement.classList.add('dark');
-       } else {
-        document.documentElement.classList.remove('dark');
-       }
+      applyTheme(newSettings);
     }
   };
+
+  const handleThemeColorChange = (hsl: string) => {
+    const newSettings = { ...settings, theme_color: hsl };
+    setSettings(newSettings);
+    applyTheme(newSettings);
+  }
 
   const handleSaveChanges = async (tab: 'restaurant' | 'tax' | 'appearance') => {
     try {
@@ -195,18 +214,24 @@ export default function SettingsPage() {
                <div className="space-y-2">
                 <Label>Theme Color</Label>
                 <div className="flex gap-2">
-                    <Button variant="outline" className="h-10 w-10 p-0 border-2 border-primary">
-                        <div className="h-full w-full rounded-md bg-primary" />
-                    </Button>
-                    <Button variant="outline" className="h-10 w-10 p-0">
-                        <div className="h-full w-full rounded-md" style={{backgroundColor: '#3B82F6'}} />
-                    </Button>
-                    <Button variant="outline" className="h-10 w-10 p-0">
-                        <div className="h-full w-full rounded-md" style={{backgroundColor: '#16A34A'}} />
-                    </Button>
-                     <Button variant="outline" className="h-10 w-10 p-0">
-                        <div className="h-full w-full rounded-md" style={{backgroundColor: '#7C3AED'}} />
-                    </Button>
+                    {themeColors.map((color) => (
+                      <Button
+                        key={color.name}
+                        variant="outline"
+                        className={cn(
+                          "h-10 w-10 p-0",
+                          settings.theme_color === color.hsl && 'border-2 border-foreground'
+                        )}
+                        onClick={() => handleThemeColorChange(color.hsl)}
+                      >
+                        <div
+                          className="h-full w-full rounded-md flex items-center justify-center"
+                          style={{ backgroundColor: `hsl(${color.hsl})` }}
+                        >
+                          {settings.theme_color === color.hsl && <Check className="h-5 w-5 text-white" />}
+                        </div>
+                      </Button>
+                    ))}
                 </div>
               </div>
             </CardContent>

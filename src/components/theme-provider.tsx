@@ -13,6 +13,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       } else {
         document.documentElement.classList.remove('dark');
       }
+      if (settings?.theme_color) {
+        document.documentElement.style.setProperty('--primary', settings.theme_color);
+      }
     };
     applyTheme();
   }, []);
