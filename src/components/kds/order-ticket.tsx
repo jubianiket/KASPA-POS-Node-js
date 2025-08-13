@@ -17,7 +17,6 @@ const statusColors: Record<NonNullable<OrderStatus>, string> = {
   preparing: 'bg-yellow-500',
   ready: 'bg-green-500',
   completed: 'bg-gray-500',
-  billed: 'bg-purple-500',
 };
 
 const statusBorderColors: Record<NonNullable<OrderStatus>, string> = {
@@ -25,7 +24,6 @@ const statusBorderColors: Record<NonNullable<OrderStatus>, string> = {
   preparing: 'border-yellow-500',
   ready: 'border-green-500',
   completed: 'border-gray-500',
-  billed: 'border-purple-500',
 };
 
 export function OrderTicket({ order, onStatusUpdate }: { order: Order; onStatusUpdate: (orderId: string, newStatus: OrderStatus) => void; }) {
@@ -59,8 +57,8 @@ export function OrderTicket({ order, onStatusUpdate }: { order: Order; onStatusU
         );
       case 'ready':
          return (
-          <Button className="w-full" onClick={() => handleStatusChange('completed')}>
-            <Check className="mr-2 h-4 w-4" /> Complete Order
+          <Button className="w-full" variant="default" disabled>
+            <Check className="mr-2 h-4 w-4" /> Ready for Pickup
           </Button>
         );
       case 'completed':

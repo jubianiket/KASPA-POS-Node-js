@@ -19,7 +19,7 @@ export default function KdsPage() {
     const fetchOrders = async () => {
       setLoading(true);
       const initialOrders = await getOrders();
-      setOrders(initialOrders);
+      setOrders(initialOrders.filter(o => o.status !== 'completed'));
       setLoading(false);
     };
 
@@ -37,27 +37,11 @@ export default function KdsPage() {
         { event: '*', schema: 'public', table: 'orders' },
         (payload) => {
           console.log('Change received!', payload);
-          if (payload.eventType === 'INSERT') {
-            const newOrder = payload.new as any;
-             const formattedOrder: Order = {
-              id: newOrder.id,
-              orderNumber: newOrder.id,
-              type: newOrder.order_type,
-              table: newOrder.table_number,
-              items: newOrder.items,
-              timestamp: newOrder.date,
-              status: newOrder.status,
-            };
-            setOrders((prevOrders) => [formattedOrder, ...prevOrders]);
-          } else if (payload.eventType === 'UPDATE') {
-             setOrders((prevOrders) =>
-              prevOrders.map((order) =>
-                order.id === payload.new.id
-                  ? { ...order, status: payload.new.status }
-                  : order
-              )
-            );
-          }
+          const fetchAndSetOrders = async () => {
+            const allOrders = await getOrders();
+            setOrders(allOrders.filter(o => o.status !== 'completed'));
+          };
+          fetchAndSetOrders();
         }
       )
       .subscribe();
@@ -70,7 +54,7 @@ export default function KdsPage() {
         channelRef.current = null;
       }
     };
-  }, [toast]);
+  }, []);
 
   const handleStatusUpdate = async (orderId: string, newStatus: Order['status']) => {
      try {
@@ -96,7 +80,7 @@ export default function KdsPage() {
         <p>Loading orders...</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-          {orders.filter(o => o.status !== 'completed' && o.status !== 'billed').map((order) => (
+          {orders.map((order) => (
             <OrderTicket key={order.id} order={order} onStatusUpdate={handleStatusUpdate} />
           ))}
         </div>

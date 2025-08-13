@@ -36,7 +36,6 @@ const statusColors: Record<Order['status'], string> = {
   preparing: 'bg-yellow-500',
   ready: 'bg-green-500',
   completed: 'bg-gray-500',
-  billed: 'bg-purple-500',
 };
 
 
@@ -58,7 +57,7 @@ export default function PosPage() {
 
   const occupiedTables = React.useMemo(() => {
     return activeOrders
-      .filter(order => order.type === 'dine-in' && order.table)
+      .filter(order => order.type === 'dine-in' && order.table && order.status !== 'completed')
       .map(order => order.table);
   }, [activeOrders]);
 
@@ -67,10 +66,10 @@ export default function PosPage() {
   }, [activeOrders]);
   
   React.useEffect(() => {
-    if (currentOrder?.status === 'completed' && prevOrderStatus.current !== 'completed') {
+    if (currentOrder?.status === 'ready' && prevOrderStatus.current !== 'ready') {
        toast({
-        title: `Order #${currentOrder.orderNumber} Ready for Billing`,
-        description: 'You can now generate the bill or add more items.',
+        title: `Order #${currentOrder.orderNumber} Ready`,
+        description: 'The order is ready to be served or billed.',
       });
     }
     prevOrderStatus.current = currentOrder?.status;
@@ -85,7 +84,7 @@ export default function PosPage() {
           getOrders(),
       ]);
       setMenuItems(items);
-      setActiveOrders(allOrders.filter(o => o.status !== 'billed'));
+      setActiveOrders(allOrders.filter(o => o.status !== 'completed'));
       setLoading(false);
     };
     fetchInitialData();
@@ -96,28 +95,26 @@ export default function PosPage() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
         (payload) => {
-            const allOrders = getOrders();
-            allOrders.then(orders => {
-                setActiveOrders(orders.filter(o => o.status !== 'billed'));
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'DELETE') {
+            getOrders().then(allOrders => {
+              setActiveOrders(allOrders.filter(o => o.status !== 'completed'));
+              
+              if (currentOrder && payload.eventType === 'UPDATE' && payload.new.id === currentOrder.id) {
+                 const updatedOrder = payload.new as any;
+                 const formattedOrder: Order = {
+                    id: updatedOrder.id,
+                    orderNumber: updatedOrder.id,
+                    type: updatedOrder.order_type,
+                    table: updatedOrder.table_number,
+                    items: updatedOrder.items,
+                    timestamp: updatedOrder.date,
+                    status: updatedOrder.status,
+                    phone_no: updatedOrder.phone_no,
+                    address: updatedOrder.address,
+                 };
+                 setCurrentOrder(formattedOrder);
+              }
             });
-
-          if (payload.eventType === 'UPDATE') {
-            const updatedOrder = payload.new as any;
-             const formattedOrder: Order = {
-              id: updatedOrder.id,
-              orderNumber: updatedOrder.id,
-              type: updatedOrder.order_type,
-              table: updatedOrder.table_number,
-              items: updatedOrder.items,
-              timestamp: updatedOrder.date,
-              status: updatedOrder.status,
-              phone_no: updatedOrder.phone_no,
-              address: updatedOrder.address,
-            };
-
-            if (currentOrder && currentOrder.id === formattedOrder.id) {
-               setCurrentOrder(formattedOrder);
-            }
           }
         }
       )
@@ -167,7 +164,7 @@ export default function PosPage() {
 
  const handleAddToOrder = (item: MenuItem) => {
     const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
-    if (currentOrder && isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'completed') return;
+    if (currentOrder && isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'ready') return;
     
     setCurrentOrder((prevOrder) => {
        const newItems = prevOrder ? [...prevOrder.items] : [];
@@ -179,7 +176,7 @@ export default function PosPage() {
            newItems.push({ name: item.name, quantity: 1, price: item.price, portion: item.portion });
        }
        
-       const orderStatus = prevOrder?.status === 'completed' ? 'received' : prevOrder?.status || 'received';
+       const orderStatus = prevOrder?.status === 'ready' ? 'received' : prevOrder?.status || 'received';
 
        if (prevOrder) {
            return { ...prevOrder, items: newItems, status: orderStatus };
@@ -197,7 +194,7 @@ export default function PosPage() {
 
   const handleQuantityChange = (itemName: string, newQuantity: number) => {
      const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
-     if (!currentOrder || (isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'completed')) return;
+     if (!currentOrder || (isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'ready')) return;
     
     setCurrentOrder(prevOrder => {
         if (!prevOrder) return null;
@@ -279,7 +276,7 @@ export default function PosPage() {
           setCurrentOrder(formattedOrder);
           
           const allOrders = await getOrders();
-          setActiveOrders(allOrders.filter(o => o.status !== 'billed'));
+          setActiveOrders(allOrders.filter(o => o.status !== 'completed'));
 
           toast({ title: "Order Sent", description: "The order has been successfully sent to the kitchen." });
       } else {
@@ -303,18 +300,21 @@ export default function PosPage() {
 
   const handleGenerateBill = async () => {
     if (currentOrder) {
-      setBillOrder(currentOrder);
-      setIsBillVisible(true);
-      await updateOrderStatus(currentOrder.id, 'billed');
-      const allOrders = await getOrders();
-      setActiveOrders(allOrders.filter(o => o.status !== 'billed'));
-      setCurrentOrder(null);
+      try {
+        await updateOrderStatus(currentOrder.id, 'completed');
+        setBillOrder(currentOrder);
+        setIsBillVisible(true);
+        setActiveOrders(prev => prev.filter(o => o.id !== currentOrder.id));
+        setCurrentOrder(null);
+      } catch (error) {
+         toast({ variant: "destructive", title: "Failed to Generate Bill", description: "Could not update the order status. Please try again." });
+      }
     }
   }
 
   const tableNumbers = Array.from({ length: 12 }, (_, i) => i + 1);
   const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
-  const canEditOrder = !isOrderSent || currentOrder?.status === 'received' || currentOrder?.status === 'completed';
+  const canEditOrder = !isOrderSent || currentOrder?.status === 'received' || currentOrder?.status === 'ready';
 
   const billSubtotal = billOrderItems.reduce((total, item) => total + (item.price || 0) * item.quantity, 0);
   const billTax = billSubtotal * 0.05;
@@ -500,7 +500,7 @@ export default function PosPage() {
         
         {currentOrder && currentOrder.items.length > 0 && (
           <div className="p-4 lg:p-6 border-t bg-card space-y-4">
-             {isOrderSent && currentOrder.status !== 'completed' && (
+             {isOrderSent && currentOrder.status !== 'ready' && (
               <div className="flex items-center justify-center font-semibold p-3 bg-blue-100 dark:bg-blue-900/50 rounded-md">
                  <Badge className={`${statusColors[currentOrder.status]} text-white`}>
                     Status: {currentOrder.status.charAt(0).toUpperCase() + currentOrder.status.slice(1)}
@@ -532,13 +532,13 @@ export default function PosPage() {
                 <Button size="lg" onClick={handleSendToKitchen}>Send to Kitchen</Button>
               </div>
             )}
-            {isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'completed' && (
+            {isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'ready' && (
                <Button size="lg" disabled className="w-full">
                  <Clock className="mr-2 h-4 w-4" />
                  Order in Progress...
                 </Button>
             )}
-             {isOrderSent && currentOrder.status === 'completed' && (
+             {isOrderSent && currentOrder.status === 'ready' && (
                <div className="grid grid-cols-2 gap-4">
                 <Button size="lg" variant="secondary" onClick={handleGenerateBill}>Generate Bill</Button>
                 <Button size="lg" onClick={handleAddMoreItems}>Add More Items</Button>
@@ -550,5 +550,3 @@ export default function PosPage() {
     </div>
   );
 }
-
-    
