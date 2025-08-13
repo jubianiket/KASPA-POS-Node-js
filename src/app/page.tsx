@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Minus, Trash2, X, Clock, Search } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Clock, Search, BookUser } from 'lucide-react';
 import { type MenuItem, type Order, menuCategories } from '@/lib/data';
 import { getMenuItems, createOrder, getOrders, updateOrderStatus } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -53,6 +53,17 @@ export default function PosPage() {
   const prevOrderStatus = React.useRef<Order['status'] | undefined>();
   const [billOrder, setBillOrder] = React.useState<Order | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [activeOrders, setActiveOrders] = React.useState<Order[]>([]);
+
+  const occupiedTables = React.useMemo(() => {
+    return activeOrders
+      .filter(order => order.type === 'dine-in' && order.table)
+      .map(order => order.table);
+  }, [activeOrders]);
+
+  const activeDineInOrders = React.useMemo(() => {
+    return activeOrders.filter(order => order.type === 'dine-in');
+  }, [activeOrders]);
   
   React.useEffect(() => {
     if (currentOrder?.status === 'completed' && prevOrderStatus.current !== 'completed') {
@@ -68,8 +79,12 @@ export default function PosPage() {
   React.useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
-      const items = await getMenuItems();
+      const [items, allOrders] = await Promise.all([
+          getMenuItems(),
+          getOrders(),
+      ]);
       setMenuItems(items);
+      setActiveOrders(allOrders.filter(o => o.status !== 'completed'));
       setLoading(false);
     };
     fetchInitialData();
@@ -80,6 +95,11 @@ export default function PosPage() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
         (payload) => {
+            const allOrders = getOrders();
+            allOrders.then(orders => {
+                setActiveOrders(orders.filter(o => o.status !== 'completed'));
+            });
+
           if (payload.eventType === 'UPDATE') {
             const updatedOrder = payload.new as any;
              const formattedOrder: Order = {
@@ -256,6 +276,10 @@ export default function PosPage() {
             address: newOrder.address,
           };
           setCurrentOrder(formattedOrder);
+          
+          const allOrders = await getOrders();
+          setActiveOrders(allOrders.filter(o => o.status !== 'completed'));
+
           toast({ title: "Order Sent", description: "The order has been successfully sent to the kitchen." });
       } else {
         throw new Error("No data returned from the server.");
@@ -271,8 +295,13 @@ export default function PosPage() {
      toast({ title: "Order Unlocked", description: "You can now add more items." });
   };
   
-  const handleBillClosed = () => {
+  const handleBillClosed = async () => {
     setIsBillVisible(false);
+    if (billOrder) {
+      await updateOrderStatus(billOrder.id, 'completed');
+      const allOrders = await getOrders();
+      setActiveOrders(allOrders.filter(o => o.status !== 'completed'));
+    }
     setBillOrder(null);
   };
 
@@ -305,31 +334,63 @@ export default function PosPage() {
             <p className="text-muted-foreground">Select items to build an order.</p>
           </div>
           <div className="flex items-center gap-2">
-            <Tabs value={orderType} onValueChange={(v) => setOrderType(v as 'dine-in' | 'delivery')} className="w-full sm:w-auto">
+            <Tabs value={orderType} onValueChange={(v) => {
+              setOrderType(v as any)
+              setCurrentOrder(null);
+            }} className="w-full sm:w-auto">
               <TabsList>
                 <TabsTrigger value="dine-in">Dine In</TabsTrigger>
+                <TabsTrigger value="active-orders">Active Orders</TabsTrigger>
                 <TabsTrigger value="delivery">Delivery</TabsTrigger>
               </TabsList>
             </Tabs>
-            {orderType === 'dine-in' && (
-              <Select value={selectedTable} onValueChange={setSelectedTable}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Table" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tableNumbers.map(table => (
-                    <SelectItem key={table} value={String(table)}>Table {table}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
           </div>
         </header>
+
+        {orderType === 'dine-in' && (
+            <div className="flex items-center gap-2">
+                <Label>Select Table:</Label>
+                <Select value={selectedTable} onValueChange={setSelectedTable} disabled={!!currentOrder}>
+                <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Table" />
+                </SelectTrigger>
+                <SelectContent>
+                    {tableNumbers.map(table => (
+                    <SelectItem key={table} value={String(table)} disabled={occupiedTables.includes(table)}>
+                        Table {table}
+                    </SelectItem>
+                    ))}
+                </SelectContent>
+                </Select>
+            </div>
+        )}
+        
+        {orderType === 'active-orders' && (
+            <Card>
+                <CardContent className="pt-6">
+                   {activeDineInOrders.length > 0 ? (
+                    <div className="space-y-2">
+                        {activeDineInOrders.map(order => (
+                            <div key={order.id} className="flex items-center justify-between p-2 border rounded-md">
+                                <div>
+                                    <p className="font-semibold">Table {order.table}</p>
+                                    <p className="text-sm text-muted-foreground">Order #{order.orderNumber}</p>
+                                </div>
+                                <Button size="sm" onClick={() => setCurrentOrder(order)}>View Order</Button>
+                            </div>
+                        ))}
+                    </div>
+                   ) : (
+                    <p className="text-muted-foreground text-center">No active dine-in orders.</p>
+                   )}
+                </CardContent>
+            </Card>
+        )}
 
         {orderType === 'delivery' && (
             <Card>
                 <CardContent className="pt-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="phone">Phone Number</Label>
                             <Input id="phone" placeholder="Enter phone number" value={deliveryPhone} onChange={(e) => setDeliveryPhone(e.target.value)} className="text-sm" />
@@ -410,7 +471,7 @@ export default function PosPage() {
       <aside className="w-full lg:w-[380px] bg-card border-l flex flex-col">
         <div className="p-4 lg:p-6 flex justify-between items-center border-b">
           <h2 className="text-2xl font-headline font-bold">Current Order</h2>
-          <Button variant="ghost" size="icon" onClick={handleClearOrder} aria-label="Clear Order" disabled={isOrderSent && currentOrder?.status !== 'completed'}>
+          <Button variant="ghost" size="icon" onClick={handleClearOrder} aria-label="Clear Order">
             <X className="h-5 w-5"/>
           </Button>
         </div>
@@ -490,3 +551,5 @@ export default function PosPage() {
     </div>
   );
 }
+
+    
