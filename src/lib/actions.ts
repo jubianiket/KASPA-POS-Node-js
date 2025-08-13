@@ -13,7 +13,7 @@ const supabaseAdmin = createClient(
 export async function getMenuItems(): Promise<MenuItem[]> {
   const { data, error } = await supabaseAdmin
     .from('menu_items')
-    .select('id, name, price, category, image_url, ai_hint');
+    .select('id, name, rate, category');
 
   if (error) {
     console.error('Error fetching menu items:', error);
@@ -24,9 +24,9 @@ export async function getMenuItems(): Promise<MenuItem[]> {
   return data.map((item: any) => ({
       id: item.id,
       name: item.name,
-      price: item.price,
+      price: item.rate, // map rate to price
       category: item.category,
-      imageUrl: item.image_url,
-      aiHint: item.ai_hint,
+      imageUrl: 'https://placehold.co/600x400.png', // Add placeholder
+      aiHint: item.name.toLowerCase().split(' ').slice(0,2).join(' '), // Generate hint from name
   }));
 }
