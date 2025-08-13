@@ -27,7 +27,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <ThemeProvider>
           <SidebarProvider>
-            <div className="flex">
+            <div className="relative min-h-screen">
               <AppSidebar />
               <SidebarInset>
                 {children}

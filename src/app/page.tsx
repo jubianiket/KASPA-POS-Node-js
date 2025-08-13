@@ -434,12 +434,12 @@ export default function PosPage() {
   );
 
   return (
-    <div className="h-[calc(100vh)] flex flex-col lg:flex-row">
+    <div className="h-screen flex flex-col lg:flex-row">
       {isBillVisible && billOrder && (
           <Bill order={billOrder} orderItems={billOrderItems} total={billTotal} tax={billTax} subtotal={billSubtotal} onBillClose={handleBillClosed} />
       )}
       <div className="flex-1 flex flex-col overflow-y-auto">
-          <main className="flex-1 p-4 lg:p-6 space-y-4 lg:space-y-6 flex flex-col lg:mb-0 mb-20">
+          <main className="flex-1 p-4 lg:p-6 space-y-4 lg:space-y-6 flex flex-col lg:mb-20">
             <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
               <div>
                 <h1 className="text-3xl font-headline font-bold">Point of Sale</h1>
@@ -654,5 +654,3 @@ export default function PosPage() {
     </div>
   );
 }
-
-    
