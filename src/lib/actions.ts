@@ -64,6 +64,7 @@ export async function getOrders(): Promise<Order[]> {
     orderNumber: order.id,
     type: order.order_type,
     table: order.table_number,
+    seat: order.seat_number,
     items: order.items,
     timestamp: order.date,
     status: order.status,

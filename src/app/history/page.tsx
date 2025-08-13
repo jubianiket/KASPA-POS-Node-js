@@ -161,7 +161,7 @@ export default function HistoryPage() {
                     {format(new Date(order.timestamp), 'dd/MM/yyyy, hh:mm a')}
                   </TableCell>
                   <TableCell>
-                    {order.type === 'dine-in' ? `Dine-In (T${order.table})` : order.type}
+                    {order.type === 'dine-in' ? `Dine-In (T${order.table}, S${order.seat})` : order.type}
                   </TableCell>
                   <TableCell>
                     <Badge className={`${statusColors[order.status]} text-white`}>

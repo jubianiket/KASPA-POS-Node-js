@@ -12,6 +12,7 @@ export type Order = {
   orderNumber: number;
   type: 'dine-in' | 'delivery';
   table?: number;
+  seat?: number;
   phone_no?: string;
   address?: string;
   items: {
@@ -53,6 +54,7 @@ export const orders: Omit<Order, 'phone_no' | 'address'>[] = [
     orderNumber: 101,
     type: 'dine-in',
     table: 5,
+    seat: 1,
     items: [
       { name: 'Margherita Pizza', quantity: 1, portion: '12-inch' },
       { name: 'Spaghetti Carbonara', quantity: 1, notes: 'Extra cheese', portion: 'Regular' },
@@ -66,6 +68,7 @@ export const orders: Omit<Order, 'phone_no' | 'address'>[] = [
     orderNumber: 103,
     type: 'dine-in',
     table: 2,
+    seat: 1,
     items: [
       { name: 'Grilled Salmon', quantity: 2, portion: 'Standard' },
       { name: 'Caprese Salad', quantity: 1, portion: 'Standard' },

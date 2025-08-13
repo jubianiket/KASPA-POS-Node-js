@@ -79,7 +79,7 @@ export function OrderTicket({ order, onStatusUpdate }: { order: Order; onStatusU
       <CardHeader className="flex flex-row justify-between items-start pb-2">
         <div>
           <CardTitle className="font-headline text-2xl">
-            {order.type === 'dine-in' ? `Table ${order.table}` : order.type}
+            {order.type === 'dine-in' ? `Table ${order.table}, Seat ${order.seat}` : order.type}
           </CardTitle>
           <p className="text-sm text-muted-foreground">Order #{order.orderNumber}</p>
         </div>

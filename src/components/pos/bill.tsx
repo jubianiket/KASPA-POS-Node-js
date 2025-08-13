@@ -45,7 +45,7 @@ export function Bill({ order, orderItems, subtotal, tax, total, onBillClose }: B
             <p>Order #{order.orderNumber}</p>
             <p>{new Date(order.timestamp).toLocaleString()}</p>
             {order.type === 'dine-in' ? (
-              <p>Table: {order.table}</p>
+              <p>Table: {order.table}, Seat: {order.seat}</p>
             ) : (
               <div className="text-left mt-2">
                 <p className="font-bold">Delivery To:</p>

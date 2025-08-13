@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Minus, Trash2, X, Clock, Search, Phone, Home } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Search, Phone, Home } from 'lucide-react';
 import { type MenuItem, type Order, menuCategories } from '@/lib/data';
 import { getMenuItems, createOrder, getOrders, updateOrderStatus } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -46,7 +46,8 @@ export default function PosPage() {
   const [activeCategory, setActiveCategory] = React.useState('All');
   const [currentOrder, setCurrentOrder] = React.useState<Order | null>(null);
   const [orderType, setOrderType] = React.useState<'dine-in' | 'delivery' | 'active-orders'>('dine-in');
-  const [selectedTable, setSelectedTable] = React.useState('1');
+  const [selectedTable, setSelectedTable] = React.useState('');
+  const [selectedSeat, setSelectedSeat] = React.useState('');
   const [deliveryAddress, setDeliveryAddress] = React.useState('');
   const [deliveryPhone, setDeliveryPhone] = React.useState('');
   const [isBillVisible, setIsBillVisible] = React.useState(false);
@@ -65,10 +66,10 @@ export default function PosPage() {
     }
   }, [searchParams]);
 
-  const occupiedTables = React.useMemo(() => {
+  const occupiedTableSeats = React.useMemo(() => {
     return activeOrders
-      .filter(order => order.type === 'dine-in' && order.table && order.status !== 'completed')
-      .map(order => order.table);
+      .filter(order => order.type === 'dine-in' && order.table && order.seat && order.status !== 'completed')
+      .map(order => `${order.table}-${order.seat}`);
   }, [activeOrders]);
 
   const activeOrdersForList = React.useMemo(() => {
@@ -117,6 +118,7 @@ export default function PosPage() {
                     orderNumber: updatedOrder.id,
                     type: updatedOrder.order_type,
                     table: updatedOrder.table_number,
+                    seat: updatedOrder.seat_number,
                     items: updatedOrder.items,
                     timestamp: updatedOrder.date,
                     status: updatedOrder.status,
@@ -175,7 +177,7 @@ export default function PosPage() {
 
  const handleAddToOrder = (item: MenuItem) => {
     const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
-    if (currentOrder && isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'ready' && currentOrder.status !== 'completed') return;
+    if (isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'ready' && currentOrder.status !== 'completed') return;
     
     setCurrentOrder((prevOrder) => {
        const newItems = prevOrder ? [...prevOrder.items] : [];
@@ -202,13 +204,14 @@ export default function PosPage() {
            address: orderType === 'delivery' ? deliveryAddress : undefined,
            phone_no: orderType === 'delivery' ? deliveryPhone : undefined,
            table: orderType === 'dine-in' ? parseInt(selectedTable, 10) : undefined,
+           seat: orderType === 'dine-in' ? parseInt(selectedSeat, 10) : undefined,
        }
     });
   };
 
   const handleQuantityChange = (itemName: string, newQuantity: number) => {
      const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
-     if (!currentOrder || (isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'ready' && currentOrder.status !== 'completed')) return;
+     if (!isOrderSent && currentOrder?.status !== 'received' && currentOrder?.status !== 'ready' && currentOrder?.status !== 'completed') return;
     
     setCurrentOrder(prevOrder => {
         if (!prevOrder) return null;
@@ -223,7 +226,8 @@ export default function PosPage() {
         }
 
         if (updatedItems.length === 0) {
-            return null; 
+            handleClearOrder();
+            return null;
         }
 
         return { ...prevOrder, items: updatedItems };
@@ -232,6 +236,10 @@ export default function PosPage() {
   
   const handleClearOrder = () => {
     setCurrentOrder(null);
+    if(orderType === 'dine-in') {
+      setSelectedTable('');
+      setSelectedSeat('');
+    }
   };
 
   const orderTotal = React.useMemo(() => {
@@ -252,20 +260,26 @@ export default function PosPage() {
       return;
     }
     
+    if (orderType === 'dine-in' && (!selectedTable || !selectedSeat)) {
+      toast({ variant: "destructive", title: "Missing Information", description: "Please select a table and seat for dine-in orders." });
+      return;
+    }
+    
     const orderData: any = {
       items: currentOrder.items.map(item => ({ name: item.name, quantity: item.quantity, price: menuItems.find(mi => mi.name === item.name)?.price || 0, portion: item.portion })),
-      order_type: orderType,
+      order_type: currentOrder.type,
       sub_total: orderTotal,
       gst: tax,
       total: totalWithTax,
       status: 'received',
     };
-
-    if (orderType === 'dine-in') {
-      orderData.table_number = parseInt(selectedTable, 10);
+    
+    if (currentOrder.type === 'dine-in') {
+      orderData.table_number = currentOrder.table;
+      orderData.seat_number = currentOrder.seat;
     } else {
-      orderData.phone_no = deliveryPhone;
-      orderData.address = deliveryAddress;
+      orderData.phone_no = currentOrder.phone_no;
+      orderData.address = currentOrder.address;
     }
 
     try {
@@ -281,6 +295,7 @@ export default function PosPage() {
             orderNumber: newOrder.id,
             type: newOrder.order_type,
             table: newOrder.table_number,
+            seat: newOrder.seat_number,
             items: newOrder.items,
             timestamp: newOrder.date,
             status: newOrder.status,
@@ -314,11 +329,11 @@ export default function PosPage() {
   const handleGenerateBill = async () => {
     if (currentOrder) {
       try {
+        await updateOrderStatus(currentOrder.id, 'completed');
         setBillOrder({ ...currentOrder, status: 'completed' }); 
         setIsBillVisible(true);
-        await updateOrderStatus(currentOrder.id, 'completed');
         setActiveOrders(prev => prev.filter(o => o.id !== currentOrder.id));
-        setCurrentOrder(null);
+        handleClearOrder();
       } catch (error) {
          toast({ variant: "destructive", title: "Failed to Generate Bill", description: "Could not update the order status. Please try again." });
       }
@@ -326,12 +341,17 @@ export default function PosPage() {
   }
 
   const tableNumbers = Array.from({ length: 12 }, (_, i) => i + 1);
+  const seatNumbers = Array.from({ length: 5 }, (_, i) => i + 1);
   const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
 
   const billSubtotal = billOrderItems.reduce((total, item) => total + (item.price || 0) * item.quantity, 0);
   const billTax = billSubtotal * 0.05;
   const billTotal = billSubtotal + billTax;
-
+  
+  const handleNewOrder = () => {
+    handleClearOrder();
+    setOrderType('dine-in');
+  }
 
   return (
     <div className="flex h-[calc(100vh-1rem)] flex-col lg:flex-row">
@@ -345,17 +365,12 @@ export default function PosPage() {
             <p className="text-muted-foreground">Select items to build an order.</p>
           </div>
           <div className="flex items-center gap-2">
+             <Button onClick={handleNewOrder}>New Order</Button>
             <Tabs value={orderType} onValueChange={(v) => {
               const newOrderType = v as 'dine-in' | 'delivery' | 'active-orders';
               setOrderType(newOrderType);
               if (newOrderType === 'dine-in' || newOrderType === 'delivery') {
-                setCurrentOrder(null);
-                if (newOrderType === 'delivery') {
-                  setSelectedTable('');
-                } else {
-                  setDeliveryAddress('');
-                  setDeliveryPhone('');
-                }
+                handleClearOrder();
               }
               const url = new URL(window.location.href);
               url.searchParams.set('tab', newOrderType);
@@ -371,26 +386,49 @@ export default function PosPage() {
         </header>
 
         {orderType === 'dine-in' && (
-            <div className="flex items-center gap-2">
-                <Label>Select Table:</Label>
-                <Select value={selectedTable} onValueChange={setSelectedTable} disabled={!!currentOrder}>
-                <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Table" />
-                </SelectTrigger>
-                <SelectContent>
-                    {tableNumbers.map(table => (
-                    <SelectItem key={table} value={String(table)} disabled={occupiedTables.includes(table)}>
-                        Table {table}
-                    </SelectItem>
-                    ))}
-                </SelectContent>
-                </Select>
+            <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Label>Table:</Label>
+                  <Select value={selectedTable} onValueChange={(val) => {setSelectedTable(val); setSelectedSeat('')}} disabled={!!currentOrder}>
+                  <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      {tableNumbers.map(table => (
+                      <SelectItem key={table} value={String(table)}>
+                          Table {table}
+                      </SelectItem>
+                      ))}
+                  </SelectContent>
+                  </Select>
+                </div>
+                {selectedTable && (
+                  <div className="flex items-center gap-2">
+                    <Label>Seat:</Label>
+                    <Select value={selectedSeat} onValueChange={setSelectedSeat} disabled={!!currentOrder}>
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {seatNumbers.map(seat => (
+                          <SelectItem 
+                            key={seat} 
+                            value={String(seat)}
+                            disabled={occupiedTableSeats.includes(`${selectedTable}-${seat}`)}
+                          >
+                            Seat {seat}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
             </div>
         )}
         
         {orderType === 'active-orders' && (
             <Card>
-                <CardContent className="pt-6">
+                <CardContent className="pt-6 max-h-96 overflow-y-auto">
                    {activeOrdersForList.length > 0 ? (
                     <div className="space-y-2">
                         {activeOrdersForList.map(order => (
@@ -398,7 +436,7 @@ export default function PosPage() {
                                 <div>
                                     {order.type === 'dine-in' ? (
                                       <>
-                                        <p className="font-semibold">Table {order.table}</p>
+                                        <p className="font-semibold">Table {order.table}, Seat {order.seat}</p>
                                         <p className="text-sm text-muted-foreground">Order #{order.orderNumber}</p>
                                       </>
                                     ) : (
@@ -512,9 +550,11 @@ export default function PosPage() {
       <aside className="w-full lg:w-[380px] bg-card border-l flex flex-col">
         <div className="p-4 lg:p-6 flex justify-between items-center border-b">
           <h2 className="text-2xl font-headline font-bold">Current Order</h2>
-          <Button variant="ghost" size="icon" onClick={handleClearOrder} aria-label="Clear Order">
-            <X className="h-5 w-5"/>
-          </Button>
+          {currentOrder && (
+            <Button variant="ghost" size="icon" onClick={handleClearOrder} aria-label="Clear Order">
+              <X className="h-5 w-5"/>
+            </Button>
+          )}
         </div>
         <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
           {!currentOrder || currentOrder.items.length === 0 ? (
