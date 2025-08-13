@@ -184,7 +184,7 @@ export default function PosPage() {
                   <p className="text-muted-foreground text-sm">{item.category}</p>
                 </CardContent>
                 <CardFooter className="flex justify-between items-center p-4 pt-0">
-                  <p className="text-lg font-bold text-primary">${item.price.toFixed(2)}</p>
+                  <p className="text-lg font-bold text-primary">₹{item.price.toFixed(2)}</p>
                   <Button size="sm" variant="outline" className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <Plus className="h-4 w-4 mr-2"/> Add
                   </Button>
@@ -213,14 +213,14 @@ export default function PosPage() {
                 <Image src={item.imageUrl} alt={item.name} width={48} height={48} className="rounded-md object-cover" data-ai-hint={item.aiHint} />
                 <div className="flex-1">
                   <p className="font-semibold">{item.name}</p>
-                  <p className="text-sm text-primary">${item.price.toFixed(2)}</p>
+                  <p className="text-sm text-primary">₹{item.price.toFixed(2)}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.id, item.quantity - 1)}><Minus className="h-4 w-4" /></Button>
                   <span className="w-6 text-center">{item.quantity}</span>
                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.id, item.quantity + 1)}><Plus className="h-4 w-4" /></Button>
                 </div>
-                <p className="font-bold w-16 text-right">${(item.price * item.quantity).toFixed(2)}</p>
+                <p className="font-bold w-16 text-right">₹{(item.price * item.quantity).toFixed(2)}</p>
                 <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleQuantityChange(item.id, 0)}><Trash2 className="h-4 w-4" /></Button>
               </div>
             ))
@@ -232,21 +232,21 @@ export default function PosPage() {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <p>Subtotal</p>
-                <p>${orderTotal.toFixed(2)}</p>
+                <p>₹{orderTotal.toFixed(2)}</p>
               </div>
               <div className="flex justify-between">
                 <p>Tax (5%)</p>
-                <p>${tax.toFixed(2)}</p>
+                <p>₹{tax.toFixed(2)}</p>
               </div>
               <div className="flex justify-between">
                 <p>Discount</p>
-                <p>-$0.00</p>
+                <p>-₹0.00</p>
               </div>
             </div>
             <Separator />
             <div className="flex justify-between items-center text-xl font-bold font-headline">
               <p>Total</p>
-              <p>${totalWithTax.toFixed(2)}</p>
+              <p>₹{totalWithTax.toFixed(2)}</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Button size="lg" variant="outline">Charge</Button>
