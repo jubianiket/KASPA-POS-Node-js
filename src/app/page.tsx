@@ -332,11 +332,11 @@ export default function PosPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="phone">Phone Number</Label>
-                            <Input id="phone" placeholder="Enter phone number" value={deliveryPhone} onChange={(e) => setDeliveryPhone(e.target.value)} />
+                            <Input id="phone" placeholder="Enter phone number" value={deliveryPhone} onChange={(e) => setDeliveryPhone(e.target.value)} className="text-sm" />
                         </div>
-                        <div className="space-y-2 md:col-span-2">
+                        <div className="space-y-2">
                             <Label htmlFor="address">Address</Label>
-                            <Textarea id="address" placeholder="Enter delivery address" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} />
+                            <Textarea id="address" placeholder="Enter delivery address" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} className="text-sm" />
                         </div>
                     </div>
                 </CardContent>
