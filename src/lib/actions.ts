@@ -152,6 +152,28 @@ export async function getSettings(): Promise<RestaurantSettings | null> {
         .single();
 
     if (error) {
+        if (error.code === 'PGRST116') {
+             const { data: insertData, error: insertError } = await supabaseAdmin
+                .from('restaurant_settings')
+                .insert({ id: 1, restaurant_name: 'KASPA POS', address: '123 Culinary Lane, Foodie City, 10101', phone: '(123) 456-7890' })
+                .select()
+                .single();
+            if (insertError) {
+                 console.error('Error inserting default settings:', insertError);
+                 return null
+            }
+            return {
+                id: insertData.id,
+                restaurant_name: insertData.restaurant_name,
+                address: insertData.address,
+                phone: insertData.phone,
+                tax_enabled: insertData.tax_enabled,
+                tax_rate: insertData.tax_rate,
+                tax_id: insertData.tax_id,
+                dark_mode: insertData.dark_mode,
+                theme_color: insertData.theme_color
+            };
+        }
         console.error('Error fetching settings:', error);
         return null;
     }

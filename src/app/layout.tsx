@@ -7,7 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'SwiftServe POS',
+  title: 'KASPA POS',
   description: 'Restaurant POS + Kitchen Display System',
 };
 

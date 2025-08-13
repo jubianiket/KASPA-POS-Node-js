@@ -15,7 +15,6 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import {
-  ChefHat,
   LayoutGrid,
   Soup,
   BookOpenText,
@@ -39,6 +38,25 @@ const navItems = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
+function KaspaLogo() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-6 w-6 text-primary-foreground"
+    >
+      <path d="M6 3L12 9L6 15V3Z" fill="currentColor" />
+      <path d="M6 15L12 9L18 3V9L12 15H6Z" fill="currentColor" />
+      <path d="M6 21L12 15L6 9V21Z" fill="currentColor" />
+      <path d="M12 15L18 21V15L12 9L12 15Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+
 export function AppSidebar() {
   const pathname = usePathname();
   const { isMobile } = useSidebar();
@@ -49,9 +67,9 @@ export function AppSidebar() {
         <div className="flex items-center gap-2 p-2 justify-between">
           <div className="flex items-center gap-2">
             <div className="bg-primary p-2 rounded-lg">
-              <ChefHat className="h-6 w-6 text-primary-foreground" />
+              <KaspaLogo />
             </div>
-            <span className="font-bold text-lg font-headline text-sidebar-foreground">SwiftServe</span>
+            <span className="font-bold text-lg font-headline text-sidebar-foreground">KASPA POS</span>
           </div>
           {isMobile && <SidebarTrigger />}
         </div>

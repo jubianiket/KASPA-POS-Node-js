@@ -38,7 +38,7 @@ export function Bill({ order, orderItems, subtotal, tax, total, onBillClose }: B
         </DialogHeader>
         <div id="bill-content" className="p-6 font-mono text-sm text-black bg-white">
           <header className="text-center mb-4">
-            <h2 className="text-lg font-bold font-headline">SwiftServe</h2>
+            <h2 className="text-lg font-bold font-headline">KASPA POS</h2>
             <p>123 Culinary Lane, Foodie City</p>
             <p>Tel: (123) 456-7890</p>
             <Separator className="my-2 bg-black" />
