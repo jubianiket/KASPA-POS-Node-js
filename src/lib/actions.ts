@@ -76,7 +76,16 @@ export async function getOrders(): Promise<Order[]> {
 }
 
 export async function updateOrderStatus(orderId: string, status: Order['status'], orderData?: any) {
-  const updatePayload = orderData ? { ...orderData, status } : { status };
+  const updatePayload: { [key: string]: any } = orderData ? { ...orderData } : {};
+  updatePayload.status = status;
+
+  // Ensure phone and address are correctly named for the database
+  if (updatePayload.phone) {
+    updatePayload.phone = updatePayload.phone;
+  }
+  if (updatePayload.address) {
+    updatePayload.address = updatePayload.address;
+  }
   
   const { data, error } = await supabaseAdmin
     .from('orders')
