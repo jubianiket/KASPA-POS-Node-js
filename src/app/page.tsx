@@ -10,6 +10,7 @@ import { Plus, Minus, Trash2, X } from 'lucide-react';
 import { menuCategories, menuItems, type MenuItem } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface OrderItem extends MenuItem {
   quantity: number;
@@ -18,6 +19,8 @@ interface OrderItem extends MenuItem {
 export default function PosPage() {
   const [activeCategory, setActiveCategory] = React.useState('All');
   const [order, setOrder] = React.useState<OrderItem[]>([]);
+  const [orderType, setOrderType] = React.useState('dine-in');
+  const [selectedTable, setSelectedTable] = React.useState('1');
   const { toast } = useToast();
 
   const filteredItems = React.useMemo(() => {
@@ -67,12 +70,20 @@ export default function PosPage() {
       });
       return;
     }
+    
+    let orderDescription = "The order has been successfully sent to the kitchen.";
+    if (orderType === 'dine-in') {
+      orderDescription = `Order for Table ${selectedTable} has been sent to the kitchen.`
+    }
+
     toast({
       title: "Order Sent",
-      description: "The order has been successfully sent to the kitchen.",
+      description: orderDescription,
     });
     handleClearOrder();
   };
+
+  const tableNumbers = Array.from({ length: 12 }, (_, i) => i + 1);
 
   return (
     <div className="flex h-[calc(100vh-1rem)] flex-col lg:flex-row">
@@ -82,13 +93,27 @@ export default function PosPage() {
             <h1 className="text-3xl font-headline font-bold">Point of Sale</h1>
             <p className="text-muted-foreground">Select items to build an order.</p>
           </div>
-          <Tabs defaultValue="dine-in" className="w-full sm:w-auto">
-            <TabsList>
-              <TabsTrigger value="dine-in">Dine In</TabsTrigger>
-              <TabsTrigger value="takeaway">Takeaway</TabsTrigger>
-              <TabsTrigger value="delivery">Delivery</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center gap-2">
+            <Tabs value={orderType} onValueChange={setOrderType} className="w-full sm:w-auto">
+              <TabsList>
+                <TabsTrigger value="dine-in">Dine In</TabsTrigger>
+                <TabsTrigger value="takeaway">Takeaway</TabsTrigger>
+                <TabsTrigger value="delivery">Delivery</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {orderType === 'dine-in' && (
+              <Select value={selectedTable} onValueChange={setSelectedTable}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Table" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tableNumbers.map(table => (
+                    <SelectItem key={table} value={String(table)}>Table {table}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
         </header>
 
         <div className="flex flex-wrap gap-2">
