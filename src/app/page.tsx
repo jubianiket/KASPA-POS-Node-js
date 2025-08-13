@@ -434,7 +434,7 @@ export default function PosPage() {
   );
 
   return (
-    <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-1rem)]">
+    <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh)]">
       {isBillVisible && billOrder && (
           <Bill order={billOrder} orderItems={billOrderItems} total={billTotal} tax={billTax} subtotal={billSubtotal} onBillClose={handleBillClosed} />
       )}
@@ -652,3 +652,5 @@ export default function PosPage() {
     </div>
   );
 }
+
+    

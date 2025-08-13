@@ -27,14 +27,18 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <ThemeProvider>
           <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset>
-              {children}
-              <Toaster />
-            </SidebarInset>
+            <div className="flex">
+              <AppSidebar />
+              <SidebarInset>
+                {children}
+                <Toaster />
+              </SidebarInset>
+            </div>
           </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>
   );
 }
+
+    
