@@ -64,14 +64,16 @@ export function AppSidebar() {
   return (
     <Sidebar variant="sidebar" collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center justify-between p-2">
-          <div className="flex items-center gap-2 overflow-hidden">
-            <div className="bg-primary p-2 rounded-lg">
-              <KaspaLogo />
+        <div className="flex items-center justify-between p-2 group-data-[collapsible=icon]:justify-center">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <div className="bg-primary p-2 rounded-lg">
+                <KaspaLogo />
+              </div>
+              <span className="font-bold text-lg font-headline text-sidebar-foreground group-data-[collapsible=icon]:hidden">
+                KASPA POS
+              </span>
             </div>
-            <span className="font-bold text-lg font-headline text-sidebar-foreground group-data-[collapsible=icon]:hidden">KASPA POS</span>
-          </div>
-          {isMobile && <SidebarTrigger />}
+            {isMobile && <SidebarTrigger />}
         </div>
       </SidebarHeader>
       <SidebarContent className="p-2">
