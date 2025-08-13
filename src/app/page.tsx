@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Minus, Trash2, X, Clock, Search } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Clock, Search, Phone, Home } from 'lucide-react';
 import { type MenuItem, type Order, menuCategories } from '@/lib/data';
 import { getMenuItems, createOrder, getOrders, updateOrderStatus } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -61,8 +61,8 @@ export default function PosPage() {
       .map(order => order.table);
   }, [activeOrders]);
 
-  const activeDineInOrders = React.useMemo(() => {
-    return activeOrders.filter(order => order.type === 'dine-in' && order.status !== 'completed');
+  const activeOrdersForList = React.useMemo(() => {
+    return activeOrders.filter(order => order.status !== 'completed');
   }, [activeOrders]);
   
   React.useEffect(() => {
@@ -97,7 +97,8 @@ export default function PosPage() {
         (payload) => {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'DELETE') {
             getOrders().then(allOrders => {
-              setActiveOrders(allOrders.filter(o => o.status !== 'completed'));
+              const currentActiveOrders = allOrders.filter(o => o.status !== 'completed');
+              setActiveOrders(currentActiveOrders);
               
               if (currentOrder && payload.eventType === 'UPDATE' && payload.new.id === currentOrder.id) {
                  const updatedOrder = payload.new as any;
@@ -187,7 +188,10 @@ export default function PosPage() {
            items: newItems,
            status: 'received',
            timestamp: new Date().toISOString(),
-           type: 'dine-in',
+           type: orderType,
+           address: orderType === 'delivery' ? deliveryAddress : undefined,
+           phone_no: orderType === 'delivery' ? deliveryPhone : undefined,
+           table: orderType === 'dine-in' ? parseInt(selectedTable, 10) : undefined,
        }
     });
   };
@@ -277,6 +281,11 @@ export default function PosPage() {
           
           const allOrders = await getOrders();
           setActiveOrders(allOrders.filter(o => o.status !== 'completed'));
+          
+          if (orderType === 'delivery') {
+            setDeliveryAddress('');
+            setDeliveryPhone('');
+          }
 
           toast({ title: "Order Sent", description: "The order has been successfully sent to the kitchen." });
       } else {
@@ -284,27 +293,6 @@ export default function PosPage() {
       }
     } catch (error) {
        toast({ variant: "destructive", title: "Failed to Send Order", description: "There was a problem sending the order. Please try again." });
-    }
-  };
-
-  const handleAddMoreItems = async () => {
-    if (!currentOrder) return;
-
-    try {
-      const updatedOrderData = {
-        items: currentOrder.items.map(item => ({ name: item.name, quantity: item.quantity, price: menuItems.find(mi => mi.name === item.name)?.price || 0, portion: item.portion })),
-        sub_total: orderTotal,
-        gst: tax,
-        total: totalWithTax,
-      };
-
-      await updateOrderStatus(currentOrder.id, 'received', updatedOrderData);
-      
-      setCurrentOrder({ ...currentOrder, status: 'received' });
-      toast({ title: "Order Updated", description: "You can now add more items. The order has been sent back to the kitchen." });
-
-    } catch (error) {
-      toast({ variant: "destructive", title: "Update Failed", description: "Could not update the order. Please try again." });
     }
   };
   
@@ -316,7 +304,7 @@ export default function PosPage() {
   const handleGenerateBill = async () => {
     if (currentOrder) {
       try {
-        // We no longer update status here, we just use the 'completed' status from KDS
+        await updateOrderStatus(currentOrder.id, 'completed');
         setBillOrder({ ...currentOrder, status: 'completed' }); 
         setIsBillVisible(true);
         setActiveOrders(prev => prev.filter(o => o.id !== currentOrder.id));
@@ -329,7 +317,6 @@ export default function PosPage() {
 
   const tableNumbers = Array.from({ length: 12 }, (_, i) => i + 1);
   const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
-  const canEditOrder = !isOrderSent || currentOrder?.status === 'received' || currentOrder?.status === 'ready' || currentOrder?.status === 'completed';
 
   const billSubtotal = billOrderItems.reduce((total, item) => total + (item.price || 0) * item.quantity, 0);
   const billTax = billSubtotal * 0.05;
@@ -349,13 +336,24 @@ export default function PosPage() {
           </div>
           <div className="flex items-center gap-2">
             <Tabs value={orderType} onValueChange={(v) => {
-              setOrderType(v as any)
-              setCurrentOrder(null);
+              const newOrderType = v as any;
+              if (newOrderType !== 'active-orders') {
+                  setOrderType(newOrderType);
+                  setCurrentOrder(null);
+                  if (newOrderType === 'delivery') {
+                    setSelectedTable('');
+                  } else {
+                    setDeliveryAddress('');
+                    setDeliveryPhone('');
+                  }
+              } else {
+                 setOrderType(newOrderType);
+              }
             }} className="w-full sm:w-auto">
               <TabsList>
                 <TabsTrigger value="dine-in">Dine In</TabsTrigger>
-                <TabsTrigger value="active-orders">Active Orders</TabsTrigger>
                 <TabsTrigger value="delivery">Delivery</TabsTrigger>
+                <TabsTrigger value="active-orders">Active Orders</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -382,20 +380,33 @@ export default function PosPage() {
         {orderType === 'active-orders' && (
             <Card>
                 <CardContent className="pt-6">
-                   {activeDineInOrders.length > 0 ? (
+                   {activeOrdersForList.length > 0 ? (
                     <div className="space-y-2">
-                        {activeDineInOrders.map(order => (
+                        {activeOrdersForList.map(order => (
                             <div key={order.id} className="flex items-center justify-between p-2 border rounded-md">
                                 <div>
-                                    <p className="font-semibold">Table {order.table}</p>
-                                    <p className="text-sm text-muted-foreground">Order #{order.orderNumber}</p>
+                                    {order.type === 'dine-in' ? (
+                                      <>
+                                        <p className="font-semibold">Table {order.table}</p>
+                                        <p className="text-sm text-muted-foreground">Order #{order.orderNumber}</p>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <p className="font-semibold flex items-center gap-2">
+                                          <Phone className="h-4 w-4 text-muted-foreground" /> {order.phone_no}
+                                        </p>
+                                        <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                           <Home className="h-4 w-4 text-muted-foreground" /> {order.address}
+                                        </p>
+                                      </>
+                                    )}
                                 </div>
                                 <Button size="sm" onClick={() => setCurrentOrder(order)}>View Order</Button>
                             </div>
                         ))}
                     </div>
                    ) : (
-                    <p className="text-muted-foreground text-center">No active dine-in orders.</p>
+                    <p className="text-muted-foreground text-center">No active orders.</p>
                    )}
                 </CardContent>
             </Card>
@@ -502,12 +513,12 @@ export default function PosPage() {
                   <p className="text-sm text-primary">Rs.{item.price ? item.price.toFixed(2) : 'N/A'}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button disabled={!canEditOrder} variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity - 1)}><Minus className="h-4 w-4" /></Button>
+                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity - 1)}><Minus className="h-4 w-4" /></Button>
                   <span className="w-6 text-center">{item.quantity}</span>
-                   <Button disabled={!canEditOrder} variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity + 1)}><Plus className="h-4 w-4" /></Button>
+                   <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity + 1)}><Plus className="h-4 w-4" /></Button>
                 </div>
                 <p className="font-bold w-16 text-right">Rs.{((item.price || 0) * item.quantity).toFixed(2)}</p>
-                <Button disabled={!canEditOrder} variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleQuantityChange(item.name, 0)}><Trash2 className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleQuantityChange(item.name, 0)}><Trash2 className="h-4 w-4" /></Button>
               </div>
             ))
           )}
@@ -549,7 +560,7 @@ export default function PosPage() {
             ) : (
                <div className="grid grid-cols-2 gap-4">
                 <Button size="lg" variant="secondary" onClick={handleGenerateBill} disabled={currentOrder.status !== 'completed'}>Generate Bill</Button>
-                <Button size="lg" onClick={handleAddMoreItems}>Add More Items</Button>
+                <Button size="lg" onClick={handleSendToKitchen}>Add More Items</Button>
               </div>
             )}
           </div>
