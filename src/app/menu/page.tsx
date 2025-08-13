@@ -13,7 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2, PlusCircle, Save } from 'lucide-react';
+import { Pencil, Trash2, PlusCircle, Save, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -288,4 +288,3 @@ export default function MenuManagementPage() {
     </div>
   );
 }
-
