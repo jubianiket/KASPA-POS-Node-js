@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import type { Order } from '@/lib/data';
 import { Button } from '../ui/button';
-import { UtensilsCrossed, Check } from 'lucide-react';
+import { UtensilsCrossed, Check, CheckCheck } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -57,8 +57,8 @@ export function OrderTicket({ order, onStatusUpdate }: { order: Order; onStatusU
         );
       case 'ready':
          return (
-          <Button className="w-full" variant="default" disabled>
-            <Check className="mr-2 h-4 w-4" /> Ready for Pickup
+          <Button className="w-full" variant="default" onClick={() => handleStatusChange('completed')}>
+            <CheckCheck className="mr-2 h-4 w-4" /> Mark as Completed
           </Button>
         );
       case 'completed':

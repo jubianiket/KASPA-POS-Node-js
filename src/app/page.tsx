@@ -164,7 +164,7 @@ export default function PosPage() {
 
  const handleAddToOrder = (item: MenuItem) => {
     const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
-    if (currentOrder && isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'ready') return;
+    if (currentOrder && isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'ready' && currentOrder.status !== 'completed') return;
     
     setCurrentOrder((prevOrder) => {
        const newItems = prevOrder ? [...prevOrder.items] : [];
@@ -194,7 +194,7 @@ export default function PosPage() {
 
   const handleQuantityChange = (itemName: string, newQuantity: number) => {
      const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
-     if (!currentOrder || (isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'ready')) return;
+     if (!currentOrder || (isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'ready' && currentOrder.status !== 'completed')) return;
     
     setCurrentOrder(prevOrder => {
         if (!prevOrder) return null;
@@ -316,8 +316,8 @@ export default function PosPage() {
   const handleGenerateBill = async () => {
     if (currentOrder) {
       try {
-        await updateOrderStatus(currentOrder.id, 'completed');
-        setBillOrder(currentOrder);
+        // We no longer update status here, we just use the 'completed' status from KDS
+        setBillOrder({ ...currentOrder, status: 'completed' }); 
         setIsBillVisible(true);
         setActiveOrders(prev => prev.filter(o => o.id !== currentOrder.id));
         setCurrentOrder(null);
@@ -329,7 +329,7 @@ export default function PosPage() {
 
   const tableNumbers = Array.from({ length: 12 }, (_, i) => i + 1);
   const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
-  const canEditOrder = !isOrderSent || currentOrder?.status === 'received' || currentOrder?.status === 'ready';
+  const canEditOrder = !isOrderSent || currentOrder?.status === 'received' || currentOrder?.status === 'ready' || currentOrder?.status === 'completed';
 
   const billSubtotal = billOrderItems.reduce((total, item) => total + (item.price || 0) * item.quantity, 0);
   const billTax = billSubtotal * 0.05;
@@ -548,7 +548,7 @@ export default function PosPage() {
               </div>
             ) : (
                <div className="grid grid-cols-2 gap-4">
-                <Button size="lg" variant="secondary" onClick={handleGenerateBill} disabled={currentOrder.status !== 'ready'}>Generate Bill</Button>
+                <Button size="lg" variant="secondary" onClick={handleGenerateBill} disabled={currentOrder.status !== 'completed'}>Generate Bill</Button>
                 <Button size="lg" onClick={handleAddMoreItems}>Add More Items</Button>
               </div>
             )}

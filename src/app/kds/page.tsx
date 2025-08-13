@@ -39,7 +39,9 @@ export default function KdsPage() {
           console.log('Change received!', payload);
           const fetchAndSetOrders = async () => {
             const allOrders = await getOrders();
-            setOrders(allOrders.filter(o => o.status !== 'completed'));
+            // In KDS, we don't show orders that are already completed by the kitchen.
+            const activeKdsOrders = allOrders.filter(o => o.status !== 'completed');
+            setOrders(activeKdsOrders);
           };
           fetchAndSetOrders();
         }
@@ -59,7 +61,16 @@ export default function KdsPage() {
   const handleStatusUpdate = async (orderId: string, newStatus: Order['status']) => {
      try {
       await updateOrderStatus(orderId, newStatus);
-      // The realtime subscription will handle the UI update
+      // The realtime subscription will handle the UI update, but we can optimistically update here too.
+      if (newStatus === 'completed') {
+        setOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
+      } else {
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order.id === orderId ? { ...order, status: newStatus } : order
+          )
+        );
+      }
     } catch (error) {
       toast({
         variant: "destructive",
