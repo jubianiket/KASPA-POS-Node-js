@@ -434,197 +434,199 @@ export default function PosPage() {
   );
 
   return (
-    <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh)]">
+    <div className="h-[calc(100vh)] flex flex-col lg:flex-row">
       {isBillVisible && billOrder && (
           <Bill order={billOrder} orderItems={billOrderItems} total={billTotal} tax={billTax} subtotal={billSubtotal} onBillClose={handleBillClosed} />
       )}
-      <div className="flex-1 p-4 lg:p-6 space-y-4 lg:space-y-6 flex flex-col overflow-y-auto lg:mb-0 mb-20">
-        <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-headline font-bold">Point of Sale</h1>
-            <p className="text-muted-foreground">Select items to build an order.</p>
-          </div>
-          <div className="flex items-center gap-2">
-             <Button onClick={handleNewOrder}>New Order</Button>
-            <Tabs value={orderType} onValueChange={(v) => {
-              const newOrderType = v as 'dine-in' | 'delivery' | 'active-orders';
-              setOrderType(newOrderType);
-              if (newOrderType === 'dine-in' || newOrderType === 'delivery') {
-                handleClearOrder();
-              }
-              const url = new URL(window.location.href);
-              url.searchParams.set('tab', newOrderType);
-              router.replace(url.toString(), { scroll: false });
-            }} className="w-full sm:w-auto">
-              <TabsList>
-                <TabsTrigger value="dine-in">Dine In</TabsTrigger>
-                <TabsTrigger value="delivery">Delivery</TabsTrigger>
-                <TabsTrigger value="active-orders">Active Orders</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-        </header>
+      <div className="flex-1 flex flex-col overflow-y-auto">
+          <main className="flex-1 p-4 lg:p-6 space-y-4 lg:space-y-6 flex flex-col lg:mb-0 mb-20">
+            <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+              <div>
+                <h1 className="text-3xl font-headline font-bold">Point of Sale</h1>
+                <p className="text-muted-foreground">Select items to build an order.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                 <Button onClick={handleNewOrder}>New Order</Button>
+                <Tabs value={orderType} onValueChange={(v) => {
+                  const newOrderType = v as 'dine-in' | 'delivery' | 'active-orders';
+                  setOrderType(newOrderType);
+                  if (newOrderType === 'dine-in' || newOrderType === 'delivery') {
+                    handleClearOrder();
+                  }
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('tab', newOrderType);
+                  router.replace(url.toString(), { scroll: false });
+                }} className="w-full sm:w-auto">
+                  <TabsList>
+                    <TabsTrigger value="dine-in">Dine In</TabsTrigger>
+                    <TabsTrigger value="delivery">Delivery</TabsTrigger>
+                    <TabsTrigger value="active-orders">Active Orders</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </header>
 
-        {orderType === 'dine-in' && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Label>Table:</Label>
-                  <Select value={selectedTable} onValueChange={(val) => {setSelectedTable(val); setSelectedSeat('')}} disabled={!!currentOrder}>
-                  <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                      {tableNumbers.map(table => (
-                      <SelectItem key={table} value={String(table)}>
-                          Table {table}
-                      </SelectItem>
-                      ))}
-                  </SelectContent>
-                  </Select>
-                </div>
-                {selectedTable && (
-                  <div className="flex items-center gap-2">
-                    <Label>Seat:</Label>
-                    <Select value={selectedSeat} onValueChange={setSelectedSeat} disabled={!!currentOrder}>
+            {orderType === 'dine-in' && (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Label>Table:</Label>
+                      <Select value={selectedTable} onValueChange={(val) => {setSelectedTable(val); setSelectedSeat('')}} disabled={!!currentOrder}>
                       <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder="Select" />
+                          <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent>
-                        {seatNumbers.map(seat => (
-                          <SelectItem 
-                            key={seat} 
-                            value={String(seat)}
-                            disabled={occupiedTableSeats.includes(`${selectedTable}-${seat}`)}
-                          >
-                            Seat {seat}
+                          {tableNumbers.map(table => (
+                          <SelectItem key={table} value={String(table)}>
+                              Table {table}
                           </SelectItem>
-                        ))}
+                          ))}
                       </SelectContent>
-                    </Select>
-                  </div>
-                )}
-            </div>
-        )}
-        
-        {orderType === 'active-orders' && (
-            <Card>
-                <CardContent className="pt-6 max-h-96 overflow-y-auto">
-                   {activeOrdersForList.length > 0 ? (
-                    <div className="space-y-2">
-                        {activeOrdersForList.map(order => (
-                            <div key={order.id} className="flex items-center justify-between p-2 border rounded-md">
-                                <div>
-                                    {order.type === 'dine-in' ? (
-                                      <>
-                                        <p className="font-semibold">Table {order.table}, Seat {order.seat}</p>
-                                        <p className="text-sm text-muted-foreground">Order #{order.orderNumber}</p>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <p className="font-semibold flex items-center gap-2">
-                                          <Phone className="h-4 w-4 text-muted-foreground" /> {order.phone_no}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                           <Home className="h-4 w-4 text-muted-foreground" /> {order.address}
-                                        </p>
-                                      </>
-                                    )}
+                      </Select>
+                    </div>
+                    {selectedTable && (
+                      <div className="flex items-center gap-2">
+                        <Label>Seat:</Label>
+                        <Select value={selectedSeat} onValueChange={setSelectedSeat} disabled={!!currentOrder}>
+                          <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {seatNumbers.map(seat => (
+                              <SelectItem 
+                                key={seat} 
+                                value={String(seat)}
+                                disabled={occupiedTableSeats.includes(`${selectedTable}-${seat}`)}
+                              >
+                                Seat {seat}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                </div>
+            )}
+            
+            {orderType === 'active-orders' && (
+                <Card>
+                    <CardContent className="pt-6 max-h-96 overflow-y-auto">
+                       {activeOrdersForList.length > 0 ? (
+                        <div className="space-y-2">
+                            {activeOrdersForList.map(order => (
+                                <div key={order.id} className="flex items-center justify-between p-2 border rounded-md">
+                                    <div>
+                                        {order.type === 'dine-in' ? (
+                                          <>
+                                            <p className="font-semibold">Table {order.table}, Seat {order.seat}</p>
+                                            <p className="text-sm text-muted-foreground">Order #{order.orderNumber}</p>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <p className="font-semibold flex items-center gap-2">
+                                              <Phone className="h-4 w-4 text-muted-foreground" /> {order.phone_no}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                               <Home className="h-4 w-4 text-muted-foreground" /> {order.address}
+                                            </p>
+                                          </>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Badge className={`${statusColors[order.status]} text-white`}>
+                                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                      </Badge>
+                                      <Button size="sm" onClick={() => setCurrentOrder(order)}>View Order</Button>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <Badge className={`${statusColors[order.status]} text-white`}>
-                                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                                  </Badge>
-                                  <Button size="sm" onClick={() => setCurrentOrder(order)}>View Order</Button>
-                                </div>
+                            ))}
+                        </div>
+                       ) : (
+                        <p className="text-muted-foreground text-center">No active orders.</p>
+                       )}
+                    </CardContent>
+                </Card>
+            )}
+
+            {orderType === 'delivery' && (
+                <Card>
+                    <CardContent className="pt-6">
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="phone">Phone Number</Label>
+                                <Input id="phone" placeholder="Enter phone number" value={deliveryPhone} onChange={(e) => setDeliveryPhone(e.target.value)} className="text-sm" />
                             </div>
-                        ))}
-                    </div>
-                   ) : (
-                    <p className="text-muted-foreground text-center">No active orders.</p>
-                   )}
-                </CardContent>
-            </Card>
-        )}
-
-        {orderType === 'delivery' && (
-            <Card>
-                <CardContent className="pt-6">
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="phone">Phone Number</Label>
-                            <Input id="phone" placeholder="Enter phone number" value={deliveryPhone} onChange={(e) => setDeliveryPhone(e.target.value)} className="text-sm" />
+                            <div className="space-y-2">
+                                <Label htmlFor="address">Address</Label>
+                                <Textarea id="address" placeholder="Enter delivery address" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} className="text-sm" />
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="address">Address</Label>
-                            <Textarea id="address" placeholder="Enter delivery address" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} className="text-sm" />
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        )}
+                    </CardContent>
+                </Card>
+            )}
 
-        <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search for an item..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 w-full"
-                />
-            </div>
-            <div className="flex items-center gap-2 overflow-x-auto pb-2">
-            <Button
-                variant={activeCategory === 'All' ? 'default' : 'outline'}
-                onClick={() => setActiveCategory('All')}
-                className="rounded-full flex-shrink-0"
-            >
-                All
-            </Button>
-            {menuCategories.map((category) => (
+            <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search for an item..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 w-full"
+                    />
+                </div>
+                <div className="flex items-center gap-2 overflow-x-auto pb-2">
                 <Button
-                key={category}
-                variant={activeCategory === category ? 'default' : 'outline'}
-                onClick={() => setActiveCategory(category)}
-                className="rounded-full flex-shrink-0"
+                    variant={activeCategory === 'All' ? 'default' : 'outline'}
+                    onClick={() => setActiveCategory('All')}
+                    className="rounded-full flex-shrink-0"
                 >
-                {category}
+                    All
                 </Button>
-            ))}
-            </div>
-        </div>
-        
-        <div className="flex-grow overflow-auto border rounded-lg">
-          {loading ? (
-             <div className="p-4 space-y-4">
-                {Array.from({ length: 10 }).map((_, i) => (
-                    <div key={i} className="flex items-center space-x-4">
-                        <Skeleton className="h-5 flex-grow" />
-                        <Skeleton className="h-5 w-20" />
-                    </div>
+                {menuCategories.map((category) => (
+                    <Button
+                    key={category}
+                    variant={activeCategory === category ? 'default' : 'outline'}
+                    onClick={() => setActiveCategory(category)}
+                    className="rounded-full flex-shrink-0"
+                    >
+                    {category}
+                    </Button>
                 ))}
+                </div>
             </div>
-          ) : (
-             <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead className="hidden sm:table-cell">Portion</TableHead>
-                    <TableHead className="text-right">Price</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredItems.map((item) => (
-                    <TableRow key={item.id} onClick={() => handleAddToOrder(item)} className="cursor-pointer">
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell className="hidden sm:table-cell">{item.portion || 'Regular'}</TableCell>
-                      <TableCell className="text-right font-semibold text-primary">Rs.{item.price ? item.price.toFixed(2) : 'N/A'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-          )}
-        </div>
+            
+            <div className="flex-grow overflow-auto border rounded-lg">
+              {loading ? (
+                 <div className="p-4 space-y-4">
+                    {Array.from({ length: 10 }).map((_, i) => (
+                        <div key={i} className="flex items-center space-x-4">
+                            <Skeleton className="h-5 flex-grow" />
+                            <Skeleton className="h-5 w-20" />
+                        </div>
+                    ))}
+                </div>
+              ) : (
+                 <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Item</TableHead>
+                        <TableHead className="hidden sm:table-cell">Portion</TableHead>
+                        <TableHead className="text-right">Price</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredItems.map((item) => (
+                        <TableRow key={item.id} onClick={() => handleAddToOrder(item)} className="cursor-pointer">
+                          <TableCell className="font-medium">{item.name}</TableCell>
+                          <TableCell className="hidden sm:table-cell">{item.portion || 'Regular'}</TableCell>
+                          <TableCell className="text-right font-semibold text-primary">Rs.{item.price ? item.price.toFixed(2) : 'N/A'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+              )}
+            </div>
+          </main>
       </div>
       
       {isMobile ? (
