@@ -30,3 +30,22 @@ export async function getMenuItems(): Promise<MenuItem[]> {
       aiHint: item.name.toLowerCase().split(' ').slice(0,2).join(' '), // Generate hint from name
   }));
 }
+
+export async function createOrder(orderData: any) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('orders')
+      .insert([orderData])
+      .select();
+
+    if (error) {
+      console.error('Error inserting order:', error);
+      throw new Error(`Error creating order: ${error.message}`);
+    }
+    
+    return data;
+  } catch(e) {
+    console.error(e);
+    throw e;
+  }
+}

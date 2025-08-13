@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Minus, Trash2, X } from 'lucide-react';
 import { menuCategories, type MenuItem } from '@/lib/data';
-import { getMenuItems } from '@/lib/actions';
+import { getMenuItems, createOrder } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -76,7 +76,7 @@ export default function PosPage() {
   const tax = orderTotal * 0.05; // Example 5% tax
   const totalWithTax = orderTotal + tax;
 
-  const handleSendToKitchen = () => {
+  const handleSendToKitchen = async () => {
     if (order.length === 0) {
       toast({
         variant: "destructive",
@@ -86,16 +86,30 @@ export default function PosPage() {
       return;
     }
     
-    let orderDescription = "The order has been successfully sent to the kitchen.";
-    if (orderType === 'dine-in') {
-      orderDescription = `Order for Table ${selectedTable} has been sent to the kitchen.`
-    }
+    const orderData = {
+      items: order.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price })),
+      table_number: orderType === 'dine-in' ? parseInt(selectedTable, 10) : null,
+      order_type: orderType,
+      sub_total: orderTotal,
+      gst: tax,
+      total: totalWithTax,
+      status: 'received',
+    };
 
-    toast({
-      title: "Order Sent",
-      description: orderDescription,
-    });
-    handleClearOrder();
+    try {
+      await createOrder(orderData);
+      toast({
+        title: "Order Sent",
+        description: "The order has been successfully sent to the kitchen.",
+      });
+      handleClearOrder();
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "Failed to Send Order",
+        description: "There was a problem sending the order to the kitchen. Please try again.",
+      });
+    }
   };
 
   const tableNumbers = Array.from({ length: 12 }, (_, i) => i + 1);
