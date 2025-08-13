@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { MenuItem } from './data';
+import sql from './db.js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -7,17 +8,13 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export async function getMenuItems(): Promise<MenuItem[]> {
-    const { data, error } = await supabase
-      .from('menu_items')
-      .select('*')
-      
-    if (error) {
-        console.error('Error fetching menu items:', error)
-        return [];
-    }
+  try {
+    const items = await sql`
+      SELECT id, name, price, category, image_url, ai_hint FROM menu_items
+    `;
     
-    // Map Supabase data to local MenuItem type
-    return data.map((item: any) => ({
+    // Map data to local MenuItem type
+    return items.map((item: any) => ({
       id: item.id,
       name: item.name,
       price: item.price,
@@ -25,4 +22,8 @@ export async function getMenuItems(): Promise<MenuItem[]> {
       imageUrl: item.image_url,
       aiHint: item.ai_hint,
     }));
+  } catch (error) {
+    console.error('Error fetching menu items:', error)
+    return [];
+  }
 }
