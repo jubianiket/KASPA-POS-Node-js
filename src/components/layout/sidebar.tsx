@@ -22,6 +22,7 @@ import {
   Settings,
   User,
   LogOut,
+  History,
 } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { Button } from '../ui/button';
@@ -32,6 +33,7 @@ const navItems = [
   { href: '/', label: 'POS', icon: LayoutGrid },
   { href: '/kds', label: 'KDS', icon: Soup },
   { href: '/menu', label: 'Menu Board', icon: BookOpenText },
+  { href: '/history', label: 'Order History', icon: History },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 

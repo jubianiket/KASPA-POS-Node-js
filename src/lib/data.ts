@@ -1,3 +1,4 @@
+
 export type MenuItem = {
   id: number;
   name: string;
@@ -16,9 +17,13 @@ export type Order = {
     quantity: number;
     notes?: string;
     portion?: string;
+    price?: number;
   }[];
   timestamp: string;
   status: 'received' | 'preparing' | 'ready' | 'completed';
+  subtotal?: number;
+  tax?: number;
+  total?: number;
 };
 
 export const menuCategories: string[] = ['Appetizers', 'Main Course', 'Desserts', 'Beverages'];

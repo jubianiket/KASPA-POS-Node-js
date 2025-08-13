@@ -1,3 +1,4 @@
+
 'use server';
 
 import { MenuItem, Order } from './data';
@@ -65,7 +66,10 @@ export async function getOrders(): Promise<Order[]> {
     table: order.table_number,
     items: order.items,
     timestamp: order.date,
-    status: order.status
+    status: order.status,
+    subtotal: order.sub_total,
+    tax: order.gst,
+    total: order.total
   }));
 }
 
