@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Minus, Trash2, X, Search, Phone, Home } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Search, Phone, Home, ShoppingBag } from 'lucide-react';
 import { type MenuItem, type Order, menuCategories } from '@/lib/data';
 import { getMenuItems, createOrder, getOrders, updateOrderStatus } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +27,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useSearchParams, useRouter } from 'next/navigation';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface OrderItem extends MenuItem {
   quantity: number;
@@ -58,6 +60,8 @@ export default function PosPage() {
   const [activeOrders, setActiveOrders] = React.useState<Order[]>([]);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const isMobile = useIsMobile();
+  const [isOrderSheetOpen, setIsOrderSheetOpen] = React.useState(false);
 
   React.useEffect(() => {
     const tab = searchParams.get('tab');
@@ -313,6 +317,7 @@ export default function PosPage() {
           }
 
           toast({ title: "Order Sent", description: "The order has been successfully sent to the kitchen." });
+          if(isMobile) setIsOrderSheetOpen(false);
       } else {
         throw new Error("No data returned from the server.");
       }
@@ -334,6 +339,7 @@ export default function PosPage() {
         setIsBillVisible(true);
         setActiveOrders(prev => prev.filter(o => o.id !== currentOrder.id));
         handleClearOrder();
+        if(isMobile) setIsOrderSheetOpen(false);
       } catch (error) {
          toast({ variant: "destructive", title: "Failed to Generate Bill", description: "Could not update the order status. Please try again." });
       }
@@ -353,12 +359,83 @@ export default function PosPage() {
     setOrderType('dine-in');
   }
 
+  const CurrentOrderContent = () => (
+     <div className="flex flex-col h-full">
+        <header className="p-4 lg:p-6 flex justify-between items-center border-b">
+          <h2 className="text-2xl font-headline font-bold">Current Order</h2>
+          {currentOrder && (
+            <Button variant="ghost" size="icon" onClick={handleClearOrder} aria-label="Clear Order">
+              <X className="h-5 w-5"/>
+            </Button>
+          )}
+        </header>
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
+          {!currentOrder || currentOrder.items.length === 0 ? (
+            <div className="text-center text-muted-foreground h-full flex items-center justify-center">
+              <p>No items in order.</p>
+            </div>
+          ) : (
+            orderItems.map((item) => (
+              <div key={item.name} className="flex items-center gap-2 sm:gap-4">
+                <div className="flex-1">
+                  <p className="font-semibold">{item.name}</p>
+                  <p className="text-sm text-primary">Rs.{item.price ? item.price.toFixed(2) : 'N/A'}</p>
+                </div>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity - 1)}><Minus className="h-4 w-4" /></Button>
+                  <span className="w-6 text-center">{item.quantity}</span>
+                   <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity + 1)}><Plus className="h-4 w-4" /></Button>
+                </div>
+                <p className="font-bold w-14 sm:w-16 text-right">Rs.{((item.price || 0) * item.quantity).toFixed(2)}</p>
+                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleQuantityChange(item.name, 0)}><Trash2 className="h-4 w-4" /></Button>
+              </div>
+            ))
+          )}
+        </div>
+        
+        {currentOrder && currentOrder.items.length > 0 && (
+          <footer className="p-4 lg:p-6 border-t bg-card space-y-4">
+             {isOrderSent && (
+              <div className="flex items-center justify-center font-semibold p-3 bg-blue-100 dark:bg-blue-900/50 rounded-md">
+                 <Badge className={`${statusColors[currentOrder.status]} text-white`}>
+                    Status: {currentOrder.status.charAt(0).toUpperCase() + currentOrder.status.slice(1)}
+                 </Badge>
+              </div>
+            )}
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <p>Subtotal</p>
+                <p>Rs.{orderTotal.toFixed(2)}</p>
+              </div>
+              <div className="flex justify-between">
+                <p>Tax (5%)</p>
+                <p>Rs.{tax.toFixed(2)}</p>
+              </div>
+              <div className="flex justify-between">
+                <p>Discount</p>
+                <p>-Rs.0.00</p>
+              </div>
+            </div>
+            <Separator />
+            <div className="flex justify-between items-center text-xl font-bold font-headline">
+              <p>Total</p>
+              <p>Rs.{totalWithTax.toFixed(2)}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Button size="lg" variant="secondary" onClick={handleGenerateBill} disabled={!currentOrder || !currentOrder.status || currentOrder.status !== 'completed'}>Generate Bill</Button>
+              <Button size="lg" onClick={handleSendToKitchen}>{isOrderSent ? 'Add More Items' : 'Send to Kitchen'}</Button>
+            </div>
+          </footer>
+        )}
+     </div>
+  );
+
   return (
-    <div className="flex h-[calc(100vh-1rem)] flex-col lg:flex-row">
+    <div className="flex flex-col lg:flex-row h-screen lg:h-[calc(100vh-1rem)]">
       {isBillVisible && billOrder && (
           <Bill order={billOrder} orderItems={billOrderItems} total={billTotal} tax={billTax} subtotal={billSubtotal} onBillClose={handleBillClosed} />
       )}
-      <div className="flex-1 p-4 lg:p-6 space-y-4 lg:space-y-6 flex flex-col overflow-y-auto">
+      <div className="flex-1 p-4 lg:p-6 space-y-4 lg:space-y-6 flex flex-col overflow-y-auto lg:mb-0 mb-20">
         <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-headline font-bold">Point of Sale</h1>
@@ -386,7 +463,7 @@ export default function PosPage() {
         </header>
 
         {orderType === 'dine-in' && (
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <div className="flex items-center gap-2">
                   <Label>Table:</Label>
                   <Select value={selectedTable} onValueChange={(val) => {setSelectedTable(val); setSelectedSeat('')}} disabled={!!currentOrder}>
@@ -529,7 +606,7 @@ export default function PosPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Item</TableHead>
-                    <TableHead>Portion</TableHead>
+                    <TableHead className="hidden sm:table-cell">Portion</TableHead>
                     <TableHead className="text-right">Price</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -537,7 +614,7 @@ export default function PosPage() {
                   {filteredItems.map((item) => (
                     <TableRow key={item.id} onClick={() => handleAddToOrder(item)} className="cursor-pointer">
                       <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>{item.portion || 'Regular'}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{item.portion || 'Regular'}</TableCell>
                       <TableCell className="text-right font-semibold text-primary">Rs.{item.price ? item.price.toFixed(2) : 'N/A'}</TableCell>
                     </TableRow>
                   ))}
@@ -547,74 +624,30 @@ export default function PosPage() {
         </div>
       </div>
       
-      <aside className="w-full lg:w-[380px] bg-card border-l flex flex-col">
-        <div className="p-4 lg:p-6 flex justify-between items-center border-b">
-          <h2 className="text-2xl font-headline font-bold">Current Order</h2>
-          {currentOrder && (
-            <Button variant="ghost" size="icon" onClick={handleClearOrder} aria-label="Clear Order">
-              <X className="h-5 w-5"/>
-            </Button>
-          )}
-        </div>
-        <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
-          {!currentOrder || currentOrder.items.length === 0 ? (
-            <div className="text-center text-muted-foreground h-full flex items-center justify-center">
-              <p>No items in order.</p>
-            </div>
-          ) : (
-            orderItems.map((item) => (
-              <div key={item.name} className="flex items-center gap-4">
-                <div className="flex-1">
-                  <p className="font-semibold">{item.name}</p>
-                  <p className="text-sm text-primary">Rs.{item.price ? item.price.toFixed(2) : 'N/A'}</p>
+      {isMobile ? (
+         currentOrder && currentOrder.items.length > 0 && (
+           <Sheet open={isOrderSheetOpen} onOpenChange={setIsOrderSheetOpen}>
+             <SheetTrigger asChild>
+                <div className="fixed bottom-0 left-0 right-0 bg-primary text-primary-foreground p-4 flex justify-between items-center shadow-lg cursor-pointer lg:hidden">
+                    <div className="flex items-center gap-3">
+                       <ShoppingBag />
+                       <span className="font-bold">{orderItems.length} {orderItems.length === 1 ? 'item' : 'items'}</span>
+                    </div>
+                    <span className="text-xl font-bold">Rs.{totalWithTax.toFixed(2)}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity - 1)}><Minus className="h-4 w-4" /></Button>
-                  <span className="w-6 text-center">{item.quantity}</span>
-                   <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity + 1)}><Plus className="h-4 w-4" /></Button>
-                </div>
-                <p className="font-bold w-16 text-right">Rs.{((item.price || 0) * item.quantity).toFixed(2)}</p>
-                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleQuantityChange(item.name, 0)}><Trash2 className="h-4 w-4" /></Button>
-              </div>
-            ))
-          )}
-        </div>
-        
-        {currentOrder && currentOrder.items.length > 0 && (
-          <div className="p-4 lg:p-6 border-t bg-card space-y-4">
-             {isOrderSent && (
-              <div className="flex items-center justify-center font-semibold p-3 bg-blue-100 dark:bg-blue-900/50 rounded-md">
-                 <Badge className={`${statusColors[currentOrder.status]} text-white`}>
-                    Status: {currentOrder.status.charAt(0).toUpperCase() + currentOrder.status.slice(1)}
-                 </Badge>
-              </div>
-            )}
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <p>Subtotal</p>
-                <p>Rs.{orderTotal.toFixed(2)}</p>
-              </div>
-              <div className="flex justify-between">
-                <p>Tax (5%)</p>
-                <p>Rs.{tax.toFixed(2)}</p>
-              </div>
-              <div className="flex justify-between">
-                <p>Discount</p>
-                <p>-Rs.0.00</p>
-              </div>
-            </div>
-            <Separator />
-            <div className="flex justify-between items-center text-xl font-bold font-headline">
-              <p>Total</p>
-              <p>Rs.{totalWithTax.toFixed(2)}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Button size="lg" variant="secondary" onClick={handleGenerateBill} disabled={currentOrder.status !== 'completed'}>Generate Bill</Button>
-              <Button size="lg" onClick={handleSendToKitchen}>{isOrderSent ? 'Add More Items' : 'Send to Kitchen'}</Button>
-            </div>
-          </div>
-        )}
-      </aside>
+             </SheetTrigger>
+             <SheetContent side="bottom" className="h-[90vh] p-0 flex flex-col">
+                <CurrentOrderContent />
+             </SheetContent>
+           </Sheet>
+         )
+      ) : (
+        <aside className="w-full lg:w-[380px] bg-card border-l flex-col hidden lg:flex">
+          <CurrentOrderContent />
+        </aside>
+      )}
     </div>
   );
 }
+
+    
