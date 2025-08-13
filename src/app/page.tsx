@@ -7,26 +7,40 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Minus, Trash2, X } from 'lucide-react';
-import { menuCategories, menuItems, type MenuItem } from '@/lib/data';
+import { menuCategories, type MenuItem } from '@/lib/data';
+import { getMenuItems } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface OrderItem extends MenuItem {
   quantity: number;
 }
 
 export default function PosPage() {
+  const [menuItems, setMenuItems] = React.useState<MenuItem[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [activeCategory, setActiveCategory] = React.useState('All');
   const [order, setOrder] = React.useState<OrderItem[]>([]);
   const [orderType, setOrderType] = React.useState('dine-in');
   const [selectedTable, setSelectedTable] = React.useState('1');
   const { toast } = useToast();
 
+  React.useEffect(() => {
+    const fetchItems = async () => {
+      setLoading(true);
+      const items = await getMenuItems();
+      setMenuItems(items);
+      setLoading(false);
+    };
+    fetchItems();
+  }, []);
+
   const filteredItems = React.useMemo(() => {
     if (activeCategory === 'All') return menuItems;
     return menuItems.filter((item) => item.category === activeCategory);
-  }, [activeCategory]);
+  }, [activeCategory, menuItems]);
 
   const handleAddToOrder = (item: MenuItem) => {
     setOrder((prevOrder) => {
@@ -137,31 +151,46 @@ export default function PosPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredItems.map((item) => (
-            <Card key={item.id} className="overflow-hidden flex flex-col group cursor-pointer" onClick={() => handleAddToOrder(item)}>
-              <CardHeader className="p-0">
-                <div className="relative h-40 w-full">
-                  <Image
-                    src={item.imageUrl}
-                    alt={item.name}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    data-ai-hint={item.aiHint}
-                  />
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 flex-grow">
-                <h3 className="text-lg font-semibold font-headline">{item.name}</h3>
-                <p className="text-muted-foreground text-sm">{item.category}</p>
-              </CardContent>
-              <CardFooter className="flex justify-between items-center p-4 pt-0">
-                <p className="text-lg font-bold text-primary">${item.price.toFixed(2)}</p>
-                <Button size="sm" variant="outline" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Plus className="h-4 w-4 mr-2"/> Add
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+          {loading ? (
+            Array.from({ length: 8 }).map((_, i) => (
+              <Card key={i} className="overflow-hidden flex flex-col">
+                <Skeleton className="h-40 w-full" />
+                <CardContent className="p-4 flex-grow space-y-2">
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </CardContent>
+                <CardFooter className="p-4 pt-0">
+                  <Skeleton className="h-6 w-1/4" />
+                </CardFooter>
+              </Card>
+            ))
+          ) : (
+            filteredItems.map((item) => (
+              <Card key={item.id} className="overflow-hidden flex flex-col group cursor-pointer" onClick={() => handleAddToOrder(item)}>
+                <CardHeader className="p-0">
+                  <div className="relative h-40 w-full">
+                    <Image
+                      src={item.imageUrl}
+                      alt={item.name}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      data-ai-hint={item.aiHint}
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent className="p-4 flex-grow">
+                  <h3 className="text-lg font-semibold font-headline">{item.name}</h3>
+                  <p className="text-muted-foreground text-sm">{item.category}</p>
+                </CardContent>
+                <CardFooter className="flex justify-between items-center p-4 pt-0">
+                  <p className="text-lg font-bold text-primary">${item.price.toFixed(2)}</p>
+                  <Button size="sm" variant="outline" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Plus className="h-4 w-4 mr-2"/> Add
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))
+          )}
         </div>
       </div>
       
