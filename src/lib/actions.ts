@@ -13,7 +13,8 @@ const supabaseAdmin = createClient(
 export async function getMenuItems(): Promise<MenuItem[]> {
   const { data, error } = await supabaseAdmin
     .from('menu_items')
-    .select('id, name, rate, category, portion');
+    .select('id, name, rate, category, portion')
+    .order('name', { ascending: true });
 
   if (error) {
     console.error('Error fetching menu items:', error);
@@ -28,6 +29,47 @@ export async function getMenuItems(): Promise<MenuItem[]> {
       portion: item.portion
   }));
 }
+
+export async function createMenuItem(itemData: Omit<MenuItem, 'id'>) {
+    const { data, error } = await supabaseAdmin
+        .from('menu_items')
+        .insert([{ name: itemData.name, rate: itemData.price, category: itemData.category, portion: itemData.portion }])
+        .select();
+
+    if (error) {
+        console.error('Error creating menu item:', error);
+        throw new Error(`Error creating menu item: ${error.message}`);
+    }
+    return data;
+}
+
+export async function updateMenuItem(id: number, itemData: Omit<MenuItem, 'id'>) {
+    const { data, error } = await supabaseAdmin
+        .from('menu_items')
+        .update({ name: itemData.name, rate: itemData.price, category: itemData.category, portion: itemData.portion })
+        .eq('id', id)
+        .select();
+    
+    if (error) {
+        console.error(`Error updating menu item ${id}:`, error);
+        throw new Error(`Error updating menu item: ${error.message}`);
+    }
+    return data;
+}
+
+export async function deleteMenuItem(id: number) {
+    const { error } = await supabaseAdmin
+        .from('menu_items')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        console.error(`Error deleting menu item ${id}:`, error);
+        throw new Error(`Error deleting menu item: ${error.message}`);
+    }
+    return { success: true };
+}
+
 
 export async function createOrder(orderData: any) {
   try {
