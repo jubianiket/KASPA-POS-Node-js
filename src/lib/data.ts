@@ -22,7 +22,7 @@ export type Order = {
     price?: number;
   }[];
   timestamp: string;
-  status: 'received' | 'preparing' | 'ready' | 'completed';
+  status: 'received' | 'preparing' | 'ready' | 'completed' | 'billed';
   subtotal?: number;
   tax?: number;
   total?: number;

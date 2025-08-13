@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -16,6 +17,7 @@ const statusColors: Record<NonNullable<OrderStatus>, string> = {
   preparing: 'bg-yellow-500',
   ready: 'bg-green-500',
   completed: 'bg-gray-500',
+  billed: 'bg-purple-500',
 };
 
 const statusBorderColors: Record<NonNullable<OrderStatus>, string> = {
@@ -23,6 +25,7 @@ const statusBorderColors: Record<NonNullable<OrderStatus>, string> = {
   preparing: 'border-yellow-500',
   ready: 'border-green-500',
   completed: 'border-gray-500',
+  billed: 'border-purple-500',
 };
 
 export function OrderTicket({ order, onStatusUpdate }: { order: Order; onStatusUpdate: (orderId: string, newStatus: OrderStatus) => void; }) {

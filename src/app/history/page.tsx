@@ -30,6 +30,7 @@ const statusColors: Record<Order['status'], string> = {
   preparing: 'bg-yellow-500',
   ready: 'bg-green-500',
   completed: 'bg-gray-500',
+  billed: 'bg-purple-500',
 };
 
 type SortKey = 'orderNumber' | 'timestamp' | 'total';
@@ -120,6 +121,7 @@ export default function HistoryPage() {
             <SelectItem value="preparing">Preparing</SelectItem>
             <SelectItem value="ready">Ready</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="billed">Billed</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -178,5 +180,3 @@ export default function HistoryPage() {
     </div>
   );
 }
-
-    

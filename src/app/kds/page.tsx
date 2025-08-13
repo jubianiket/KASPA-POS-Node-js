@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -95,7 +96,7 @@ export default function KdsPage() {
         <p>Loading orders...</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-          {orders.filter(o => o.status !== 'completed').map((order) => (
+          {orders.filter(o => o.status !== 'completed' && o.status !== 'billed').map((order) => (
             <OrderTicket key={order.id} order={order} onStatusUpdate={handleStatusUpdate} />
           ))}
         </div>

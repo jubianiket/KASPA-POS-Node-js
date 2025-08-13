@@ -36,6 +36,7 @@ const statusColors: Record<Order['status'], string> = {
   preparing: 'bg-yellow-500',
   ready: 'bg-green-500',
   completed: 'bg-gray-500',
+  billed: 'bg-purple-500',
 };
 
 
@@ -84,7 +85,7 @@ export default function PosPage() {
           getOrders(),
       ]);
       setMenuItems(items);
-      setActiveOrders(allOrders.filter(o => o.status !== 'completed'));
+      setActiveOrders(allOrders.filter(o => o.status !== 'billed'));
       setLoading(false);
     };
     fetchInitialData();
@@ -97,7 +98,7 @@ export default function PosPage() {
         (payload) => {
             const allOrders = getOrders();
             allOrders.then(orders => {
-                setActiveOrders(orders.filter(o => o.status !== 'completed'));
+                setActiveOrders(orders.filter(o => o.status !== 'billed'));
             });
 
           if (payload.eventType === 'UPDATE') {
@@ -278,7 +279,7 @@ export default function PosPage() {
           setCurrentOrder(formattedOrder);
           
           const allOrders = await getOrders();
-          setActiveOrders(allOrders.filter(o => o.status !== 'completed'));
+          setActiveOrders(allOrders.filter(o => o.status !== 'billed'));
 
           toast({ title: "Order Sent", description: "The order has been successfully sent to the kitchen." });
       } else {
@@ -298,9 +299,9 @@ export default function PosPage() {
   const handleBillClosed = async () => {
     setIsBillVisible(false);
     if (billOrder) {
-      await updateOrderStatus(billOrder.id, 'completed');
+      await updateOrderStatus(billOrder.id, 'billed');
       const allOrders = await getOrders();
-      setActiveOrders(allOrders.filter(o => o.status !== 'completed'));
+      setActiveOrders(allOrders.filter(o => o.status !== 'billed'));
     }
     setBillOrder(null);
   };
@@ -551,5 +552,3 @@ export default function PosPage() {
     </div>
   );
 }
-
-    
