@@ -37,6 +37,7 @@ export default function PosPage() {
   const [selectedTable, setSelectedTable] = React.useState('1');
   const [isBillVisible, setIsBillVisible] = React.useState(false);
   const { toast } = useToast();
+  const prevOrderStatus = React.useRef<Order['status'] | undefined>();
 
   const fetchActiveOrder = async () => {
     const allOrders = await getOrders();
@@ -46,6 +47,17 @@ export default function PosPage() {
       setCurrentOrder(lastActiveOrder);
     }
   };
+  
+  React.useEffect(() => {
+    if (currentOrder?.status === 'completed' && prevOrderStatus.current !== 'completed') {
+       toast({
+        title: `Order #${currentOrder.orderNumber} Ready for Billing`,
+        description: 'You can now generate the bill or add more items.',
+      });
+    }
+    prevOrderStatus.current = currentOrder?.status;
+  }, [currentOrder, toast]);
+
 
   React.useEffect(() => {
     const fetchInitialData = async () => {
@@ -79,12 +91,6 @@ export default function PosPage() {
 
             setCurrentOrder(prevOrder => {
               if (prevOrder && prevOrder.id === formattedOrder.id) {
-                 if (prevOrder.status !== 'completed' && formattedOrder.status === 'completed') {
-                   toast({
-                    title: `Order #${formattedOrder.orderNumber} Ready for Billing`,
-                    description: 'You can now generate the bill or add more items.',
-                  });
-                }
                 return formattedOrder;
               }
               return prevOrder;
@@ -97,7 +103,7 @@ export default function PosPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast]);
+  }, []);
 
   const orderItems = currentOrder?.items.map(orderItem => {
     const menuItem = menuItems.find(mi => mi.name === orderItem.name);
