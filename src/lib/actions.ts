@@ -69,7 +69,9 @@ export async function getOrders(): Promise<Order[]> {
     status: order.status,
     subtotal: order.sub_total,
     tax: order.gst,
-    total: order.total
+    total: order.total,
+    phone: order.phone,
+    address: order.address
   }));
 }
 
@@ -89,3 +91,5 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
 
   return data;
 }
+
+    

@@ -10,8 +10,10 @@ export type MenuItem = {
 export type Order = {
   id: string;
   orderNumber: number;
-  type: 'dine-in' | 'takeaway' | 'delivery';
+  type: 'dine-in' | 'delivery';
   table?: number;
+  phone?: string;
+  address?: string;
   items: {
     name: string;
     quantity: number;
@@ -45,7 +47,7 @@ export const menuItems: MenuItem[] = [
   { id: 14, name: 'Fresh Orange Juice', price: 5.00, category: 'Beverages', portion: '16oz' },
 ];
 
-export const orders: Order[] = [
+export const orders: Omit<Order, 'phone' | 'address'>[] = [
   {
     id: 'a1b2c3d4',
     orderNumber: 101,
@@ -58,17 +60,6 @@ export const orders: Order[] = [
     ],
     timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
     status: 'received',
-  },
-  {
-    id: 'e5f6g7h8',
-    orderNumber: 102,
-    type: 'takeaway',
-    items: [
-      { name: 'Steak Frites', quantity: 1, notes: 'Medium rare', portion: 'Standard' },
-      { name: 'Chocolate Lava Cake', quantity: 1, portion: 'Standard' },
-    ],
-    timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    status: 'preparing',
   },
   {
     id: 'i9j0k1l2',
@@ -95,3 +86,5 @@ export const orders: Order[] = [
     status: 'completed',
   },
 ];
+
+    

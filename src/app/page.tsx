@@ -16,6 +16,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/lib/supabase';
 import { Bill } from '@/components/pos/bill';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -42,8 +44,10 @@ export default function PosPage() {
   const [loading, setLoading] = React.useState(true);
   const [activeCategory, setActiveCategory] = React.useState('All');
   const [currentOrder, setCurrentOrder] = React.useState<Order | null>(null);
-  const [orderType, setOrderType] = React.useState('dine-in');
+  const [orderType, setOrderType] = React.useState<'dine-in' | 'delivery'>('dine-in');
   const [selectedTable, setSelectedTable] = React.useState('1');
+  const [deliveryAddress, setDeliveryAddress] = React.useState('');
+  const [deliveryPhone, setDeliveryPhone] = React.useState('');
   const [isBillVisible, setIsBillVisible] = React.useState(false);
   const { toast } = useToast();
   const prevOrderStatus = React.useRef<Order['status'] | undefined>();
@@ -86,6 +90,8 @@ export default function PosPage() {
               items: updatedOrder.items,
               timestamp: updatedOrder.date,
               status: updatedOrder.status,
+              address: updatedOrder.address,
+              phone: updatedOrder.phone,
             };
 
             if (currentOrder && currentOrder.id === formattedOrder.id) {
@@ -210,16 +216,27 @@ export default function PosPage() {
       toast({ variant: "destructive", title: "Empty Order", description: "Please add items to the order before sending." });
       return;
     }
+
+    if (orderType === 'delivery' && (!deliveryPhone || !deliveryAddress)) {
+      toast({ variant: "destructive", title: "Missing Information", description: "Please enter phone and address for delivery orders." });
+      return;
+    }
     
-    const orderData = {
+    const orderData: any = {
       items: currentOrder.items.map(item => ({ name: item.name, quantity: item.quantity, price: menuItems.find(mi => mi.name === item.name)?.price || 0, portion: item.portion })),
-      table_number: orderType === 'dine-in' ? parseInt(selectedTable, 10) : null,
       order_type: orderType,
       sub_total: orderTotal,
       gst: tax,
       total: totalWithTax,
       status: 'received',
     };
+
+    if (orderType === 'dine-in') {
+      orderData.table_number = parseInt(selectedTable, 10);
+    } else {
+      orderData.phone = deliveryPhone;
+      orderData.address = deliveryAddress;
+    }
 
     try {
       const isNewOrder = String(currentOrder.id).startsWith('temp-');
@@ -237,6 +254,8 @@ export default function PosPage() {
             items: newOrder.items,
             timestamp: newOrder.date,
             status: newOrder.status,
+            address: newOrder.address,
+            phone: newOrder.phone,
           };
           setCurrentOrder(formattedOrder);
           toast({ title: "Order Sent", description: "The order has been successfully sent to the kitchen." });
@@ -257,13 +276,13 @@ export default function PosPage() {
   const handleBillClosed = () => {
     setIsBillVisible(false);
     setBillOrder(null);
+    setCurrentOrder(null);
   };
 
   const handleGenerateBill = () => {
     if (currentOrder) {
       setBillOrder(currentOrder);
       setIsBillVisible(true);
-      setCurrentOrder(null);
     }
   }
 
@@ -288,10 +307,9 @@ export default function PosPage() {
             <p className="text-muted-foreground">Select items to build an order.</p>
           </div>
           <div className="flex items-center gap-2">
-            <Tabs value={orderType} onValueChange={setOrderType} className="w-full sm:w-auto">
+            <Tabs value={orderType} onValueChange={(v) => setOrderType(v as 'dine-in' | 'delivery')} className="w-full sm:w-auto">
               <TabsList>
                 <TabsTrigger value="dine-in">Dine In</TabsTrigger>
-                <TabsTrigger value="takeaway">Takeaway</TabsTrigger>
                 <TabsTrigger value="delivery">Delivery</TabsTrigger>
               </TabsList>
             </Tabs>
@@ -309,6 +327,23 @@ export default function PosPage() {
             )}
           </div>
         </header>
+
+        {orderType === 'delivery' && (
+            <Card>
+                <CardContent className="pt-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="phone">Phone Number</Label>
+                            <Input id="phone" placeholder="Enter phone number" value={deliveryPhone} onChange={(e) => setDeliveryPhone(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="address">Address</Label>
+                            <Textarea id="address" placeholder="Enter delivery address" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        )}
 
         <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
@@ -457,3 +492,5 @@ export default function PosPage() {
     </div>
   );
 }
+
+    
