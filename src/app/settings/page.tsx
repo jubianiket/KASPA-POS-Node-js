@@ -1,3 +1,7 @@
+
+'use client';
+
+import * as React from 'react';
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -17,8 +21,35 @@ import {
 } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
+import { useToast } from '@/hooks/use-toast';
 
 export default function SettingsPage() {
+  const [isDarkMode, setIsDarkMode] = React.useState(false);
+  const { toast } = useToast();
+
+  React.useEffect(() => {
+    const isDark = document.documentElement.classList.contains('dark');
+    setIsDarkMode(isDark);
+  }, []);
+
+  const handleDarkModeChange = (checked: boolean) => {
+    setIsDarkMode(checked);
+    if (checked) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
+  
+  const handleSaveChanges = () => {
+    toast({
+        title: "Settings Saved",
+        description: "Your changes have been saved locally.",
+    });
+  }
+
   return (
     <div className="p-4 lg:p-6 h-full">
       <header className="mb-6">
@@ -54,7 +85,7 @@ export default function SettingsPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button>Save Changes</Button>
+              <Button onClick={handleSaveChanges}>Save Changes</Button>
             </CardFooter>
           </Card>
         </TabsContent>
@@ -86,7 +117,7 @@ export default function SettingsPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button>Save Tax Settings</Button>
+              <Button onClick={handleSaveChanges}>Save Tax Settings</Button>
             </CardFooter>
           </Card>
         </TabsContent>
@@ -106,7 +137,11 @@ export default function SettingsPage() {
                     Enable a darker color scheme for the interface.
                   </span>
                 </Label>
-                <Switch id="dark-mode" />
+                <Switch 
+                  id="dark-mode" 
+                  checked={isDarkMode}
+                  onCheckedChange={handleDarkModeChange}
+                />
               </div>
                <div className="space-y-2">
                 <Label>Theme Color</Label>
@@ -127,7 +162,7 @@ export default function SettingsPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button>Save Appearance</Button>
+              <Button onClick={handleSaveChanges}>Save Appearance</Button>
             </CardFooter>
           </Card>
         </TabsContent>
