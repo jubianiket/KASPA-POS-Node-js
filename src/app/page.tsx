@@ -62,7 +62,7 @@ export default function PosPage() {
   }, [activeOrders]);
 
   const activeDineInOrders = React.useMemo(() => {
-    return activeOrders.filter(order => order.type === 'dine-in');
+    return activeOrders.filter(order => order.type === 'dine-in' && order.status !== 'completed');
   }, [activeOrders]);
   
   React.useEffect(() => {
@@ -287,10 +287,25 @@ export default function PosPage() {
     }
   };
 
-  const handleAddMoreItems = () => {
+  const handleAddMoreItems = async () => {
     if (!currentOrder) return;
-    setCurrentOrder({ ...currentOrder, status: 'received' });
-     toast({ title: "Order Unlocked", description: "You can now add more items." });
+
+    try {
+      const updatedOrderData = {
+        items: currentOrder.items.map(item => ({ name: item.name, quantity: item.quantity, price: menuItems.find(mi => mi.name === item.name)?.price || 0, portion: item.portion })),
+        sub_total: orderTotal,
+        gst: tax,
+        total: totalWithTax,
+      };
+
+      await updateOrderStatus(currentOrder.id, 'received', updatedOrderData);
+      
+      setCurrentOrder({ ...currentOrder, status: 'received' });
+      toast({ title: "Order Updated", description: "You can now add more items. The order has been sent back to the kitchen." });
+
+    } catch (error) {
+      toast({ variant: "destructive", title: "Update Failed", description: "Could not update the order. Please try again." });
+    }
   };
   
   const handleBillClosed = () => {
@@ -500,7 +515,7 @@ export default function PosPage() {
         
         {currentOrder && currentOrder.items.length > 0 && (
           <div className="p-4 lg:p-6 border-t bg-card space-y-4">
-             {isOrderSent && currentOrder.status !== 'ready' && (
+             {isOrderSent && (
               <div className="flex items-center justify-center font-semibold p-3 bg-blue-100 dark:bg-blue-900/50 rounded-md">
                  <Badge className={`${statusColors[currentOrder.status]} text-white`}>
                     Status: {currentOrder.status.charAt(0).toUpperCase() + currentOrder.status.slice(1)}
@@ -526,21 +541,14 @@ export default function PosPage() {
               <p>Total</p>
               <p>Rs.{totalWithTax.toFixed(2)}</p>
             </div>
-             {(!isOrderSent || currentOrder.status === 'received') && (
+            {!isOrderSent ? (
               <div className="grid grid-cols-2 gap-4">
                 <Button size="lg" variant="outline">Charge</Button>
                 <Button size="lg" onClick={handleSendToKitchen}>Send to Kitchen</Button>
               </div>
-            )}
-            {isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'ready' && (
-               <Button size="lg" disabled className="w-full">
-                 <Clock className="mr-2 h-4 w-4" />
-                 Order in Progress...
-                </Button>
-            )}
-             {isOrderSent && currentOrder.status === 'ready' && (
+            ) : (
                <div className="grid grid-cols-2 gap-4">
-                <Button size="lg" variant="secondary" onClick={handleGenerateBill}>Generate Bill</Button>
+                <Button size="lg" variant="secondary" onClick={handleGenerateBill} disabled={currentOrder.status !== 'ready'}>Generate Bill</Button>
                 <Button size="lg" onClick={handleAddMoreItems}>Add More Items</Button>
               </div>
             )}
