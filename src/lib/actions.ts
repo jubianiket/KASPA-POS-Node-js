@@ -91,5 +91,3 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
 
   return data;
 }
-
-    

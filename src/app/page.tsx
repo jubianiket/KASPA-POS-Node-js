@@ -124,8 +124,6 @@ export default function PosPage() {
         price: menuItem?.price || 0,
         id: menuItem?.id || 0,
         category: menuItem?.category || 'N/A',
-        imageUrl: '',
-        aiHint: ''
     };
   }) || [];
 
@@ -283,6 +281,7 @@ export default function PosPage() {
     if (currentOrder) {
       setBillOrder(currentOrder);
       setIsBillVisible(true);
+      setCurrentOrder(null);
     }
   }
 
@@ -492,5 +491,3 @@ export default function PosPage() {
     </div>
   );
 }
-
-    
