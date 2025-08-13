@@ -97,7 +97,7 @@ export default function PosPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [toast]);
 
   const orderItems = currentOrder?.items.map(orderItem => {
     const menuItem = menuItems.find(mi => mi.name === orderItem.name);
@@ -119,6 +119,7 @@ export default function PosPage() {
   }, [activeCategory, menuItems]);
 
  const handleAddToOrder = (item: MenuItem) => {
+    const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
     if (currentOrder && isOrderSent && currentOrder.status !== 'received') return;
     
     setCurrentOrder((prevOrder) => {
@@ -146,6 +147,7 @@ export default function PosPage() {
   };
 
   const handleQuantityChange = (itemName: string, newQuantity: number) => {
+     const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
      if (!currentOrder || (isOrderSent && currentOrder.status !== 'received')) return;
     
     setCurrentOrder(prevOrder => {
@@ -196,12 +198,27 @@ export default function PosPage() {
     };
 
     try {
-      const result = String(currentOrder.id).startsWith('temp-')
+      const isNewOrder = String(currentOrder.id).startsWith('temp-');
+      const result = isNewOrder
         ? await createOrder(orderData)
         : await updateOrderStatus(currentOrder.id, 'received', orderData);
 
-      toast({ title: "Order Sent", description: "The order has been successfully sent to the kitchen." });
-      setCurrentOrder(result[0]);
+      if (result && result.length > 0) {
+          const newOrder = result[0];
+          const formattedOrder: Order = {
+            id: newOrder.id,
+            orderNumber: newOrder.id,
+            type: newOrder.order_type,
+            table: newOrder.table_number,
+            items: newOrder.items,
+            timestamp: newOrder.date,
+            status: newOrder.status,
+          };
+          setCurrentOrder(formattedOrder);
+          toast({ title: "Order Sent", description: "The order has been successfully sent to the kitchen." });
+      } else {
+        throw new Error("No data returned from the server.");
+      }
     } catch (error) {
        toast({ variant: "destructive", title: "Failed to Send Order", description: "There was a problem sending the order. Please try again." });
     }
@@ -403,3 +420,5 @@ export default function PosPage() {
     </div>
   );
 }
+
+    
