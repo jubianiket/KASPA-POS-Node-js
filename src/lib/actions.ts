@@ -3,7 +3,6 @@
 import { MenuItem, Order } from './data';
 import { createClient } from '@supabase/supabase-js'
 
-// Create a new Supabase client for server-side operations
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -20,14 +19,13 @@ export async function getMenuItems(): Promise<MenuItem[]> {
     return [];
   }
 
-  // Map data to local MenuItem type
   return data.map((item: any) => ({
       id: item.id,
       name: item.name,
-      price: item.rate, // map rate to price
+      price: item.rate,
       category: item.category,
-      imageUrl: 'https://placehold.co/600x400.png', // Add placeholder
-      aiHint: item.name.toLowerCase().split(' ').slice(0,2).join(' '), // Generate hint from name
+      imageUrl: 'https://placehold.co/600x400.png',
+      aiHint: item.name.toLowerCase().split(' ').slice(0,2).join(' '),
   }));
 }
 
@@ -72,10 +70,12 @@ export async function getOrders(): Promise<Order[]> {
   }));
 }
 
-export async function updateOrderStatus(orderId: string, status: Order['status']) {
+export async function updateOrderStatus(orderId: string, status: Order['status'], orderData?: any) {
+  const updatePayload = orderData ? { ...orderData, status } : { status };
+  
   const { data, error } = await supabaseAdmin
     .from('orders')
-    .update({ status })
+    .update(updatePayload)
     .eq('id', orderId)
     .select();
 

@@ -8,18 +8,18 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Minus, Trash2, X, CheckCircle, Clock } from 'lucide-react';
 import { type MenuItem, type Order, menuCategories } from '@/lib/data';
-import { getMenuItems, createOrder, getOrders } from '@/lib/actions';
+import { getMenuItems, createOrder, getOrders, updateOrderStatus } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/lib/supabase';
+import { Bill } from '@/components/pos/bill';
 
 interface OrderItem extends MenuItem {
   quantity: number;
 }
 
-// Map order statuses to colors for the badge
 const statusColors: Record<Order['status'], string> = {
   received: 'bg-blue-500',
   preparing: 'bg-yellow-500',
@@ -35,12 +35,12 @@ export default function PosPage() {
   const [currentOrder, setCurrentOrder] = React.useState<Order | null>(null);
   const [orderType, setOrderType] = React.useState('dine-in');
   const [selectedTable, setSelectedTable] = React.useState('1');
+  const [isBillVisible, setIsBillVisible] = React.useState(false);
   const { toast } = useToast();
 
   const fetchActiveOrder = async () => {
-    // For simplicity, this fetches the most recent non-completed order.
-    // In a real-world scenario, you might want to manage multiple active orders or per-table orders.
     const allOrders = await getOrders();
+    // In a real multi-user environment, you'd scope this to the current cashier/terminal
     const lastActiveOrder = allOrders.find(o => o.status !== 'completed');
     if (lastActiveOrder) {
       setCurrentOrder(lastActiveOrder);
@@ -52,7 +52,8 @@ export default function PosPage() {
       setLoading(true);
       const items = await getMenuItems();
       setMenuItems(items);
-      await fetchActiveOrder();
+      // Not fetching active order initially to start with a clean slate.
+      // await fetchActiveOrder();
       setLoading(false);
     };
     fetchInitialData();
@@ -78,19 +79,16 @@ export default function PosPage() {
 
             setCurrentOrder(prevOrder => {
               if (prevOrder && prevOrder.id === formattedOrder.id) {
+                if (formattedOrder.status === 'completed') {
+                   toast({
+                    title: `Order #${formattedOrder.orderNumber} Ready for Billing`,
+                    description: 'You can now generate the bill or add more items.',
+                  });
+                }
                 return formattedOrder;
               }
               return prevOrder;
             });
-
-             // If the order is completed, clear it from the view to allow a new order.
-            if (formattedOrder.status === 'completed') {
-               toast({
-                title: `Order #${formattedOrder.orderNumber} Completed!`,
-                description: 'Starting a new order.',
-              });
-              handleClearOrder();
-            }
           }
         }
       )
@@ -108,6 +106,8 @@ export default function PosPage() {
         imageUrl: menuItem?.imageUrl || 'https://placehold.co/600x400.png',
         aiHint: menuItem?.aiHint || '',
         price: menuItem?.price || 0,
+        id: menuItem?.id || 0,
+        category: menuItem?.category || 'N/A'
     };
   }) || [];
 
@@ -118,8 +118,8 @@ export default function PosPage() {
     return itemsWithPrice.filter((item) => item.category === activeCategory);
   }, [activeCategory, menuItems]);
 
-  const handleAddToOrder = (item: MenuItem) => {
-    if (currentOrder && currentOrder.status !== 'received') return; // Can only modify when 'received' or new
+ const handleAddToOrder = (item: MenuItem) => {
+    if (currentOrder && isOrderSent && currentOrder.status !== 'received') return;
     
     setCurrentOrder((prevOrder) => {
        const newItems = prevOrder ? [...prevOrder.items] : [];
@@ -128,13 +128,12 @@ export default function PosPage() {
        if (existingItemIndex > -1) {
            newItems[existingItemIndex].quantity += 1;
        } else {
-           newItems.push({ name: item.name, quantity: 1 });
+           newItems.push({ name: item.name, quantity: 1, price: item.price });
        }
 
        if (prevOrder) {
            return { ...prevOrder, items: newItems };
        }
-       // Create a new temporary order if one doesn't exist
        return {
            id: `temp-${Date.now()}`,
            orderNumber: 0,
@@ -147,7 +146,7 @@ export default function PosPage() {
   };
 
   const handleQuantityChange = (itemName: string, newQuantity: number) => {
-    if (!currentOrder || currentOrder.status !== 'received') return;
+     if (!currentOrder || (isOrderSent && currentOrder.status !== 'received')) return;
     
     setCurrentOrder(prevOrder => {
         if (!prevOrder) return null;
@@ -162,7 +161,7 @@ export default function PosPage() {
         }
 
         if (updatedItems.length === 0) {
-            return null; // Clear order if no items left
+            return null; 
         }
 
         return { ...prevOrder, items: updatedItems };
@@ -177,24 +176,17 @@ export default function PosPage() {
     return orderItems.reduce((total, item) => total + (item.price || 0) * item.quantity, 0);
   }, [orderItems]);
   
-  const tax = orderTotal * 0.05; // Example 5% tax
+  const tax = orderTotal * 0.05;
   const totalWithTax = orderTotal + tax;
 
   const handleSendToKitchen = async () => {
     if (!currentOrder || currentOrder.items.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "Empty Order",
-        description: "Please add items to the order before sending.",
-      });
+      toast({ variant: "destructive", title: "Empty Order", description: "Please add items to the order before sending." });
       return;
     }
     
     const orderData = {
-      items: currentOrder.items.map(item => {
-          const menuItem = menuItems.find(mi => mi.name === item.name);
-          return { name: item.name, quantity: item.quantity, price: menuItem?.price || 0 };
-      }),
+      items: currentOrder.items.map(item => ({ name: item.name, quantity: item.quantity, price: menuItems.find(mi => mi.name === item.name)?.price || 0 })),
       table_number: orderType === 'dine-in' ? parseInt(selectedTable, 10) : null,
       order_type: orderType,
       sub_total: orderTotal,
@@ -204,21 +196,26 @@ export default function PosPage() {
     };
 
     try {
-      const newOrder = await createOrder(orderData);
-      toast({
-        title: "Order Sent",
-        description: "The order has been successfully sent to the kitchen.",
-      });
-      // The new order will come back via the realtime subscription,
-      // but we can update it immediately for a better user experience.
-      setCurrentOrder(newOrder[0]);
+      const result = String(currentOrder.id).startsWith('temp-')
+        ? await createOrder(orderData)
+        : await updateOrderStatus(currentOrder.id, 'received', orderData);
+
+      toast({ title: "Order Sent", description: "The order has been successfully sent to the kitchen." });
+      setCurrentOrder(result[0]);
     } catch (error) {
-       toast({
-        variant: "destructive",
-        title: "Failed to Send Order",
-        description: "There was a problem sending the order to the kitchen. Please try again.",
-      });
+       toast({ variant: "destructive", title: "Failed to Send Order", description: "There was a problem sending the order. Please try again." });
     }
+  };
+
+  const handleAddMoreItems = () => {
+    if (!currentOrder) return;
+    setCurrentOrder({ ...currentOrder, status: 'received' });
+     toast({ title: "Order Unlocked", description: "You can now add more items." });
+  };
+  
+  const handleBillClosed = () => {
+    setIsBillVisible(false);
+    handleClearOrder();
   };
 
   const tableNumbers = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -226,6 +223,9 @@ export default function PosPage() {
 
   return (
     <div className="flex h-[calc(100vh-1rem)] flex-col lg:flex-row">
+      {isBillVisible && currentOrder && (
+          <Bill order={currentOrder} orderItems={orderItems} total={totalWithTax} tax={tax} subtotal={orderTotal} onBillClose={handleBillClosed} />
+      )}
       <div className="flex-1 p-4 lg:p-6 space-y-4 lg:space-y-6 overflow-y-auto">
         <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
@@ -322,7 +322,7 @@ export default function PosPage() {
       <aside className="w-full lg:w-[380px] bg-card border-l flex flex-col">
         <div className="p-4 lg:p-6 flex justify-between items-center border-b">
           <h2 className="text-2xl font-headline font-bold">Current Order</h2>
-          <Button variant="ghost" size="icon" onClick={handleClearOrder} aria-label="Clear Order" disabled={isOrderSent}>
+          <Button variant="ghost" size="icon" onClick={handleClearOrder} aria-label="Clear Order" disabled={isOrderSent && currentOrder?.status !== 'received'}>
             <X className="h-5 w-5"/>
           </Button>
         </div>
@@ -340,12 +340,12 @@ export default function PosPage() {
                   <p className="text-sm text-primary">₹{item.price ? item.price.toFixed(2) : 'N/A'}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button disabled={isOrderSent} variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity - 1)}><Minus className="h-4 w-4" /></Button>
+                  <Button disabled={isOrderSent && currentOrder?.status !== 'received'} variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity - 1)}><Minus className="h-4 w-4" /></Button>
                   <span className="w-6 text-center">{item.quantity}</span>
-                   <Button disabled={isOrderSent} variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity + 1)}><Plus className="h-4 w-4" /></Button>
+                   <Button disabled={isOrderSent && currentOrder?.status !== 'received'} variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity + 1)}><Plus className="h-4 w-4" /></Button>
                 </div>
                 <p className="font-bold w-16 text-right">₹{((item.price || 0) * item.quantity).toFixed(2)}</p>
-                <Button disabled={isOrderSent} variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleQuantityChange(item.name, 0)}><Trash2 className="h-4 w-4" /></Button>
+                <Button disabled={isOrderSent && currentOrder?.status !== 'received'} variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleQuantityChange(item.name, 0)}><Trash2 className="h-4 w-4" /></Button>
               </div>
             ))
           )}
@@ -353,8 +353,8 @@ export default function PosPage() {
         
         {currentOrder && (
           <div className="p-4 lg:p-6 border-t bg-card space-y-4">
-             {isOrderSent && (
-              <div className="flex items-center justify-center font-semibold p-3 bg-blue-100 rounded-md">
+             {isOrderSent && currentOrder.status !== 'completed' && (
+              <div className="flex items-center justify-center font-semibold p-3 bg-blue-100 dark:bg-blue-900/50 rounded-md">
                  <Badge className={`${statusColors[currentOrder.status]} text-white`}>
                     Status: {currentOrder.status.charAt(0).toUpperCase() + currentOrder.status.slice(1)}
                  </Badge>
@@ -379,16 +379,23 @@ export default function PosPage() {
               <p>Total</p>
               <p>₹{totalWithTax.toFixed(2)}</p>
             </div>
-             {!isOrderSent ? (
+             {(!isOrderSent || currentOrder.status === 'received') && (
               <div className="grid grid-cols-2 gap-4">
                 <Button size="lg" variant="outline">Charge</Button>
                 <Button size="lg" onClick={handleSendToKitchen}>Send to Kitchen</Button>
               </div>
-            ) : (
+            )}
+            {isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'completed' && (
                <Button size="lg" disabled className="w-full">
                  <Clock className="mr-2 h-4 w-4" />
                  Order in Progress...
                 </Button>
+            )}
+             {isOrderSent && currentOrder.status === 'completed' && (
+               <div className="grid grid-cols-2 gap-4">
+                <Button size="lg" variant="secondary" onClick={() => setIsBillVisible(true)}>Generate Bill</Button>
+                <Button size="lg" onClick={handleAddMoreItems}>Add More Items</Button>
+              </div>
             )}
           </div>
         )}
