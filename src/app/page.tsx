@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Minus, Trash2, X, Clock, Search, BookUser } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Clock, Search } from 'lucide-react';
 import { type MenuItem, type Order, menuCategories } from '@/lib/data';
 import { getMenuItems, createOrder, getOrders, updateOrderStatus } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -296,20 +296,18 @@ export default function PosPage() {
      toast({ title: "Order Unlocked", description: "You can now add more items." });
   };
   
-  const handleBillClosed = async () => {
+  const handleBillClosed = () => {
     setIsBillVisible(false);
-    if (billOrder) {
-      await updateOrderStatus(billOrder.id, 'billed');
-      const allOrders = await getOrders();
-      setActiveOrders(allOrders.filter(o => o.status !== 'billed'));
-    }
     setBillOrder(null);
   };
 
-  const handleGenerateBill = () => {
+  const handleGenerateBill = async () => {
     if (currentOrder) {
       setBillOrder(currentOrder);
       setIsBillVisible(true);
+      await updateOrderStatus(currentOrder.id, 'billed');
+      const allOrders = await getOrders();
+      setActiveOrders(allOrders.filter(o => o.status !== 'billed'));
       setCurrentOrder(null);
     }
   }
@@ -552,3 +550,5 @@ export default function PosPage() {
     </div>
   );
 }
+
+    
