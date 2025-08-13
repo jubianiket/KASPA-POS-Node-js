@@ -15,7 +15,7 @@ import { X, Printer } from 'lucide-react';
 
 interface BillProps {
   order: Order;
-  orderItems: { name: string; quantity: number; price: number, id: number; category: string}[];
+  orderItems: { name: string; quantity: number; price: number, id: number; category: string; portion?: string }[];
   subtotal: number;
   tax: number;
   total: number;
@@ -54,7 +54,7 @@ export function Bill({ order, orderItems, subtotal, tax, total, onBillClose }: B
             </div>
             {orderItems.map((item) => (
               <div key={item.id} className="grid grid-cols-[1fr_auto_auto] gap-x-2">
-                <span>{item.name}</span>
+                <span>{item.name} {item.portion && `(${item.portion})`}</span>
                 <span className="text-right">{item.quantity}</span>
                 <span className="text-right">₹{(item.price * item.quantity).toFixed(2)}</span>
               </div>

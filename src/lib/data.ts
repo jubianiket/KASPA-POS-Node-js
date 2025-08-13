@@ -3,6 +3,7 @@ export type MenuItem = {
   name: string;
   price: number;
   category: string;
+  portion?: string;
 };
 
 export type Order = {
@@ -14,6 +15,7 @@ export type Order = {
     name: string;
     quantity: number;
     notes?: string;
+    portion?: string;
   }[];
   timestamp: string;
   status: 'received' | 'preparing' | 'ready' | 'completed';
@@ -22,20 +24,20 @@ export type Order = {
 export const menuCategories: string[] = ['Appetizers', 'Main Course', 'Desserts', 'Beverages'];
 
 export const menuItems: MenuItem[] = [
-  { id: 1, name: 'Bruschetta', price: 8.99, category: 'Appetizers' },
-  { id: 2, name: 'Caprese Salad', price: 10.50, category: 'Appetizers' },
-  { id: 3, name: 'Garlic Bread', price: 6.00, category: 'Appetizers' },
-  { id: 4, name: 'Spaghetti Carbonara', price: 15.99, category: 'Main Course' },
-  { id: 5, name: 'Margherita Pizza', price: 14.50, category: 'Main Course' },
-  { id: 6, name: 'Grilled Salmon', price: 22.00, category: 'Main Course' },
-  { id: 7, name: 'Steak Frites', price: 28.50, category: 'Main Course' },
-  { id: 8, name: 'Chicken Parmesan', price: 18.00, category: 'Main Course' },
-  { id: 9, name: 'Tiramisu', price: 9.00, category: 'Desserts' },
-  { id: 10, name: 'Chocolate Lava Cake', price: 9.50, category: 'Desserts' },
-  { id: 11, name: 'Cheesecake', price: 8.50, category: 'Desserts' },
-  { id: 12, name: 'Espresso', price: 3.50, category: 'Beverages' },
-  { id: 13, name: 'Latte', price: 4.50, category: 'Beverages' },
-  { id: 14, name: 'Fresh Orange Juice', price: 5.00, category: 'Beverages' },
+  { id: 1, name: 'Bruschetta', price: 8.99, category: 'Appetizers', portion: 'Standard' },
+  { id: 2, name: 'Caprese Salad', price: 10.50, category: 'Appetizers', portion: 'Standard' },
+  { id: 3, name: 'Garlic Bread', price: 6.00, category: 'Appetizers', portion: 'Standard' },
+  { id: 4, name: 'Spaghetti Carbonara', price: 15.99, category: 'Main Course', portion: 'Regular' },
+  { id: 5, name: 'Margherita Pizza', price: 14.50, category: 'Main Course', portion: '12-inch' },
+  { id: 6, name: 'Grilled Salmon', price: 22.00, category: 'Main Course', portion: 'Standard' },
+  { id: 7, name: 'Steak Frites', price: 28.50, category: 'Main Course', portion: 'Standard' },
+  { id: 8, name: 'Chicken Parmesan', price: 18.00, category: 'Main Course', portion: 'Standard' },
+  { id: 9, name: 'Tiramisu', price: 9.00, category: 'Desserts', portion: 'Slice' },
+  { id: 10, name: 'Chocolate Lava Cake', price: 9.50, category: 'Desserts', portion: 'Standard' },
+  { id: 11, name: 'Cheesecake', price: 8.50, category: 'Desserts', portion: 'Slice' },
+  { id: 12, name: 'Espresso', price: 3.50, category: 'Beverages', portion: 'Single' },
+  { id: 13, name: 'Latte', price: 4.50, category: 'Beverages', portion: '12oz' },
+  { id: 14, name: 'Fresh Orange Juice', price: 5.00, category: 'Beverages', portion: '16oz' },
 ];
 
 export const orders: Order[] = [
@@ -45,9 +47,9 @@ export const orders: Order[] = [
     type: 'dine-in',
     table: 5,
     items: [
-      { name: 'Margherita Pizza', quantity: 1 },
-      { name: 'Spaghetti Carbonara', quantity: 1, notes: 'Extra cheese' },
-      { name: 'Fresh Orange Juice', quantity: 2 },
+      { name: 'Margherita Pizza', quantity: 1, portion: '12-inch' },
+      { name: 'Spaghetti Carbonara', quantity: 1, notes: 'Extra cheese', portion: 'Regular' },
+      { name: 'Fresh Orange Juice', quantity: 2, portion: '16oz' },
     ],
     timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
     status: 'received',
@@ -57,8 +59,8 @@ export const orders: Order[] = [
     orderNumber: 102,
     type: 'takeaway',
     items: [
-      { name: 'Steak Frites', quantity: 1, notes: 'Medium rare' },
-      { name: 'Chocolate Lava Cake', quantity: 1 },
+      { name: 'Steak Frites', quantity: 1, notes: 'Medium rare', portion: 'Standard' },
+      { name: 'Chocolate Lava Cake', quantity: 1, portion: 'Standard' },
     ],
     timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
     status: 'preparing',
@@ -69,9 +71,9 @@ export const orders: Order[] = [
     type: 'dine-in',
     table: 2,
     items: [
-      { name: 'Grilled Salmon', quantity: 2 },
-      { name: 'Caprese Salad', quantity: 1 },
-      { name: 'Latte', quantity: 2 },
+      { name: 'Grilled Salmon', quantity: 2, portion: 'Standard' },
+      { name: 'Caprese Salad', quantity: 1, portion: 'Standard' },
+      { name: 'Latte', quantity: 2, portion: '12oz' },
     ],
     timestamp: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
     status: 'ready',
@@ -81,8 +83,8 @@ export const orders: Order[] = [
     orderNumber: 104,
     type: 'delivery',
     items: [
-      { name: 'Chicken Parmesan', quantity: 1 },
-      { name: 'Garlic Bread', quantity: 1 },
+      { name: 'Chicken Parmesan', quantity: 1, portion: 'Standard' },
+      { name: 'Garlic Bread', quantity: 1, portion: 'Standard' },
     ],
     timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
     status: 'completed',

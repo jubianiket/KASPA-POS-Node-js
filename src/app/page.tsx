@@ -150,7 +150,7 @@ export default function PosPage() {
        if (existingItemIndex > -1) {
            newItems[existingItemIndex].quantity += 1;
        } else {
-           newItems.push({ name: item.name, quantity: 1, price: item.price });
+           newItems.push({ name: item.name, quantity: 1, price: item.price, portion: item.portion });
        }
        
        const orderStatus = prevOrder?.status === 'completed' ? 'received' : prevOrder?.status || 'received';
@@ -211,7 +211,7 @@ export default function PosPage() {
     }
     
     const orderData = {
-      items: currentOrder.items.map(item => ({ name: item.name, quantity: item.quantity, price: menuItems.find(mi => mi.name === item.name)?.price || 0 })),
+      items: currentOrder.items.map(item => ({ name: item.name, quantity: item.quantity, price: menuItems.find(mi => mi.name === item.name)?.price || 0, portion: item.portion })),
       table_number: orderType === 'dine-in' ? parseInt(selectedTable, 10) : null,
       order_type: orderType,
       sub_total: orderTotal,
@@ -354,6 +354,7 @@ export default function PosPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Item</TableHead>
+                    <TableHead>Portion</TableHead>
                     <TableHead className="text-right">Price</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -361,6 +362,7 @@ export default function PosPage() {
                   {filteredItems.map((item) => (
                     <TableRow key={item.id} onClick={() => handleAddToOrder(item)} className="cursor-pointer">
                       <TableCell className="font-medium">{item.name}</TableCell>
+                      <TableCell>{item.portion || 'Regular'}</TableCell>
                       <TableCell className="text-right font-semibold text-primary">₹{item.price ? item.price.toFixed(2) : 'N/A'}</TableCell>
                     </TableRow>
                   ))}

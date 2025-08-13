@@ -91,7 +91,7 @@ export function OrderTicket({ order, onStatusUpdate }: { order: Order; onStatusU
           {order.items.map((item, index) => (
             <li key={index} className="flex justify-between items-start">
               <div>
-                <span className="font-semibold">{item.quantity}x {item.name}</span>
+                <span className="font-semibold">{item.quantity}x {item.name} {item.portion && `(${item.portion})`}</span>
                 {item.notes && <p className="text-sm text-accent pl-4">&quot;{item.notes}&quot;</p>}
               </div>
             </li>

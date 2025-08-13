@@ -12,7 +12,7 @@ const supabaseAdmin = createClient(
 export async function getMenuItems(): Promise<MenuItem[]> {
   const { data, error } = await supabaseAdmin
     .from('menu_items')
-    .select('id, name, rate, category');
+    .select('id, name, rate, category, portion');
 
   if (error) {
     console.error('Error fetching menu items:', error);
@@ -24,6 +24,7 @@ export async function getMenuItems(): Promise<MenuItem[]> {
       name: item.name,
       price: item.rate,
       category: item.category,
+      portion: item.portion
   }));
 }
 
