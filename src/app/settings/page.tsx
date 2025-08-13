@@ -27,8 +27,9 @@ import type { RestaurantSettings } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
+import { generateTheme, type ThemeColors } from '@/lib/theme';
 
-const themeColors = [
+const predefinedThemes = [
   { name: 'Orange', hsl: '29 100% 50%' },
   { name: 'Blue', hsl: '221 83% 53%' },
   { name: 'Green', hsl: '142 71% 45%' },
@@ -47,7 +48,10 @@ export default function SettingsPage() {
       document.documentElement.classList.remove('dark');
     }
     if (theme.theme_color) {
-      document.documentElement.style.setProperty('--primary', theme.theme_color);
+      const newTheme = generateTheme(theme.theme_color);
+      Object.entries(newTheme).forEach(([key, value]) => {
+         document.documentElement.style.setProperty(`--${key}`, value);
+      });
     }
   };
 
@@ -214,7 +218,7 @@ export default function SettingsPage() {
                <div className="space-y-2">
                 <Label>Theme Color</Label>
                 <div className="flex gap-2">
-                    {themeColors.map((color) => (
+                    {predefinedThemes.map((color) => (
                       <Button
                         key={color.name}
                         variant="outline"
