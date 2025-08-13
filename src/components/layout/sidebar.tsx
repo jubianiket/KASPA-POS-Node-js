@@ -23,6 +23,7 @@ import {
   User,
   LogOut,
   History,
+  LayoutDashboard,
 } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { Button } from '../ui/button';
@@ -30,6 +31,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Separator } from '../ui/separator';
 
 const navItems = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/', label: 'POS', icon: LayoutGrid },
   { href: '/kds', label: 'KDS', icon: Soup },
   { href: '/menu', label: 'Menu Board', icon: BookOpenText },
