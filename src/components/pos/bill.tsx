@@ -57,7 +57,7 @@ export function Bill({ order, orderItems, subtotal, tax, total, onBillClose }: B
               <div key={item.id} className="grid grid-cols-[1fr_auto_auto] gap-x-2">
                 <span>{item.name} {item.portion && `(${item.portion})`}</span>
                 <span className="text-right">{item.quantity}</span>
-                <span className="text-right">₹{(item.price * item.quantity).toFixed(2)}</span>
+                <span className="text-right" dangerouslySetInnerHTML={{ __html: `&#8377;${(item.price * item.quantity).toFixed(2)}` }} />
               </div>
             ))}
           </main>
@@ -67,16 +67,16 @@ export function Bill({ order, orderItems, subtotal, tax, total, onBillClose }: B
           <footer className="space-y-1">
             <div className="flex justify-between">
               <span>Subtotal:</span>
-              <span>₹{subtotal.toFixed(2)}</span>
+              <span dangerouslySetInnerHTML={{ __html: `&#8377;${subtotal.toFixed(2)}` }} />
             </div>
             <div className="flex justify-between">
               <span>Tax (5%):</span>
-              <span>₹{tax.toFixed(2)}</span>
+              <span dangerouslySetInnerHTML={{ __html: `&#8377;${tax.toFixed(2)}` }} />
             </div>
              <Separator className="my-1 bg-black" />
             <div className="flex justify-between font-bold text-base">
               <span>Total:</span>
-              <span>₹{total.toFixed(2)}</span>
+              <span dangerouslySetInnerHTML={{ __html: `&#8377;${total.toFixed(2)}` }} />
             </div>
              <Separator className="my-2 bg-black" />
             <p className="text-center">Thank you for your visit!</p>

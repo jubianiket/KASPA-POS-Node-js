@@ -364,7 +364,7 @@ export default function PosPage() {
                     <TableRow key={item.id} onClick={() => handleAddToOrder(item)} className="cursor-pointer">
                       <TableCell className="font-medium">{item.name}</TableCell>
                       <TableCell>{item.portion || 'Regular'}</TableCell>
-                      <TableCell className="text-right font-semibold text-primary">₹{item.price ? item.price.toFixed(2) : 'N/A'}</TableCell>
+                      <TableCell className="text-right font-semibold text-primary" dangerouslySetInnerHTML={{ __html: `&#8377;${item.price ? item.price.toFixed(2) : 'N/A'}` }} />
                     </TableRow>
                   ))}
                 </TableBody>
@@ -390,14 +390,14 @@ export default function PosPage() {
               <div key={item.name} className="flex items-center gap-4">
                 <div className="flex-1">
                   <p className="font-semibold">{item.name}</p>
-                  <p className="text-sm text-primary">₹{item.price ? item.price.toFixed(2) : 'N/A'}</p>
+                  <p className="text-sm text-primary" dangerouslySetInnerHTML={{ __html: `&#8377;${item.price ? item.price.toFixed(2) : 'N/A'}` }} />
                 </div>
                 <div className="flex items-center gap-2">
                   <Button disabled={!canEditOrder} variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity - 1)}><Minus className="h-4 w-4" /></Button>
                   <span className="w-6 text-center">{item.quantity}</span>
                    <Button disabled={!canEditOrder} variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity + 1)}><Plus className="h-4 w-4" /></Button>
                 </div>
-                <p className="font-bold w-16 text-right">₹{((item.price || 0) * item.quantity).toFixed(2)}</p>
+                <p className="font-bold w-16 text-right" dangerouslySetInnerHTML={{ __html: `&#8377;${((item.price || 0) * item.quantity).toFixed(2)}` }} />
                 <Button disabled={!canEditOrder} variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleQuantityChange(item.name, 0)}><Trash2 className="h-4 w-4" /></Button>
               </div>
             ))
@@ -416,21 +416,21 @@ export default function PosPage() {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <p>Subtotal</p>
-                <p>₹{orderTotal.toFixed(2)}</p>
+                <p dangerouslySetInnerHTML={{ __html: `&#8377;${orderTotal.toFixed(2)}` }} />
               </div>
               <div className="flex justify-between">
                 <p>Tax (5%)</p>
-                <p>₹{tax.toFixed(2)}</p>
+                <p dangerouslySetInnerHTML={{ __html: `&#8377;${tax.toFixed(2)}` }} />
               </div>
               <div className="flex justify-between">
                 <p>Discount</p>
-                <p>-₹0.00</p>
+                <p dangerouslySetInnerHTML={{ __html: `-&#8377;0.00` }} />
               </div>
             </div>
             <Separator />
             <div className="flex justify-between items-center text-xl font-bold font-headline">
               <p>Total</p>
-              <p>₹{totalWithTax.toFixed(2)}</p>
+              <p dangerouslySetInnerHTML={{ __html: `&#8377;${totalWithTax.toFixed(2)}` }} />
             </div>
              {(!isOrderSent || currentOrder.status === 'received') && (
               <div className="grid grid-cols-2 gap-4">
