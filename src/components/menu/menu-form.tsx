@@ -30,7 +30,7 @@ type MenuFormValues = z.infer<typeof formSchema>;
 
 interface MenuFormProps {
   onSubmit: (values: MenuFormValues) => void;
-  initialData?: MenuItem | null;
+  initialData?: Partial<MenuItem> | null;
   onCancel: () => void;
 }
 
@@ -39,7 +39,7 @@ export function MenuForm({ onSubmit, initialData, onCancel }: MenuFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: initialData?.name || '',
-      price: initialData?.price || 0,
+      price: initialData?.price || undefined,
       category: initialData?.category || '',
       portion: initialData?.portion || '',
     },

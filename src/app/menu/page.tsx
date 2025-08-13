@@ -13,7 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2, PlusCircle } from 'lucide-react';
+import { Pencil, Trash2, PlusCircle, Save } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -34,12 +34,24 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
+import { menuCategories } from '@/lib/data';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function MenuManagementPage() {
   const [menuItems, setMenuItems] = React.useState<MenuItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
-  const [editingItem, setEditingItem] = React.useState<MenuItem | null>(null);
+  
+  const [editingRowId, setEditingRowId] = React.useState<number | null>(null);
+  const [editedData, setEditedData] = React.useState<Partial<MenuItem>>({});
+
   const { toast } = useToast();
 
   const fetchItems = async () => {
@@ -55,21 +67,16 @@ export default function MenuManagementPage() {
 
   const handleFormSubmit = async (values: Omit<MenuItem, 'id'>) => {
     try {
-      if (editingItem) {
-        await updateMenuItem(editingItem.id, values);
-        toast({ title: 'Success', description: 'Menu item updated successfully.' });
-      } else {
-        await createMenuItem(values);
-        toast({ title: 'Success', description: 'Menu item added successfully.' });
-      }
+      // This is for the "Add New Item" dialog
+      await createMenuItem(values);
+      toast({ title: 'Success', description: 'Menu item added successfully.' });
       setIsFormOpen(false);
-      setEditingItem(null);
-      fetchItems(); // Refetch items to show the new/updated data
+      fetchItems();
     } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to save menu item.',
+        description: 'Failed to add new menu item.',
       });
     }
   };
@@ -78,7 +85,7 @@ export default function MenuManagementPage() {
     try {
       await deleteMenuItem(id);
       toast({ title: 'Success', description: 'Menu item deleted successfully.' });
-      fetchItems(); // Refetch items
+      fetchItems();
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -87,15 +94,61 @@ export default function MenuManagementPage() {
       });
     }
   };
-
-  const openEditForm = (item: MenuItem) => {
-    setEditingItem(item);
-    setIsFormOpen(true);
+  
+  const handleEditClick = (item: MenuItem) => {
+    setEditingRowId(item.id);
+    setEditedData(item);
   };
 
-  const openNewForm = () => {
-    setEditingItem(null);
-    setIsFormOpen(true);
+  const handleCancelEdit = () => {
+    setEditingRowId(null);
+    setEditedData({});
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingRowId || !editedData.name || !editedData.price || !editedData.category) {
+      toast({
+        variant: 'destructive',
+        title: 'Validation Error',
+        description: 'Name, price, and category cannot be empty.',
+      });
+      return;
+    }
+
+    try {
+      await updateMenuItem(editingRowId, {
+        name: editedData.name,
+        price: Number(editedData.price),
+        category: editedData.category,
+        portion: editedData.portion,
+      });
+      toast({ title: 'Success', description: 'Menu item updated successfully.' });
+      setEditingRowId(null);
+      setEditedData({});
+      fetchItems();
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update menu item.',
+      });
+    }
+  };
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, field: keyof MenuItem) => {
+    setEditedData(prev => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const handleSelectChange = (value: string, field: keyof MenuItem) => {
+    setEditedData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
   };
 
   return (
@@ -107,18 +160,17 @@ export default function MenuManagementPage() {
         </div>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openNewForm}>
+            <Button onClick={() => setIsFormOpen(true)}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Add New Item
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingItem ? 'Edit Menu Item' : 'Add New Menu Item'}</DialogTitle>
+              <DialogTitle>Add New Menu Item</DialogTitle>
             </DialogHeader>
             <MenuForm
               onSubmit={handleFormSubmit}
-              initialData={editingItem}
               onCancel={() => setIsFormOpen(false)}
             />
           </DialogContent>
@@ -142,38 +194,91 @@ export default function MenuManagementPage() {
             <TableBody>
               {menuItems.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.name}</TableCell>
-                  <TableCell>{item.category}</TableCell>
-                  <TableCell>{item.portion || 'N/A'}</TableCell>
-                  <TableCell className="text-right font-semibold text-primary">
-                    Rs.{item.price.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex justify-center gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => openEditForm(item)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                           <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                            <Trash2 className="h-4 w-4" />
+                  {editingRowId === item.id ? (
+                    <>
+                      <TableCell>
+                        <Input
+                          value={editedData.name || ''}
+                          onChange={(e) => handleInputChange(e, 'name')}
+                          onKeyDown={handleKeyDown}
+                          autoFocus
+                        />
+                      </TableCell>
+                      <TableCell>
+                         <Select value={editedData.category} onValueChange={(value) => handleSelectChange(value, 'category')}>
+                           <SelectTrigger>
+                             <SelectValue placeholder="Select..." />
+                           </SelectTrigger>
+                           <SelectContent>
+                             {menuCategories.map((category) => (
+                               <SelectItem key={category} value={category}>{category}</SelectItem>
+                             ))}
+                           </SelectContent>
+                         </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={editedData.portion || ''}
+                          onChange={(e) => handleInputChange(e, 'portion')}
+                          onKeyDown={handleKeyDown}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Input
+                          type="number"
+                          value={editedData.price || ''}
+                          onChange={(e) => handleInputChange(e, 'price')}
+                          onKeyDown={handleKeyDown}
+                          className="text-right"
+                        />
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center gap-2">
+                           <Button variant="ghost" size="icon" onClick={handleSaveEdit}>
+                             <Save className="h-4 w-4" />
+                           </Button>
+                           <Button variant="ghost" size="icon" onClick={handleCancelEdit}>
+                             <X className="h-4 w-4" />
+                           </Button>
+                        </div>
+                      </TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell className="font-medium">{item.name}</TableCell>
+                      <TableCell>{item.category}</TableCell>
+                      <TableCell>{item.portion || 'N/A'}</TableCell>
+                      <TableCell className="text-right font-semibold text-primary">
+                        Rs.{item.price.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => handleEditClick(item)}>
+                            <Pencil className="h-4 w-4" />
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete the menu item.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(item.id)}>Continue</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently delete the menu item.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(item.id)}>Continue</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -183,3 +288,4 @@ export default function MenuManagementPage() {
     </div>
   );
 }
+
