@@ -44,7 +44,15 @@ export function Bill({ order, orderItems, subtotal, tax, total, onBillClose }: B
             <Separator className="my-2 bg-black" />
             <p>Order #{order.orderNumber}</p>
             <p>{new Date(order.timestamp).toLocaleString()}</p>
-            {order.type === 'dine-in' && <p>Table: {order.table}</p>}
+            {order.type === 'dine-in' ? (
+              <p>Table: {order.table}</p>
+            ) : (
+              <div className="text-left mt-2">
+                <p className="font-bold">Delivery To:</p>
+                <p>{order.address}</p>
+                <p>Phone: {order.phone_no}</p>
+              </div>
+            )}
           </header>
 
           <Separator className="my-2 border-dashed bg-black" />
