@@ -6,9 +6,10 @@ import { getOrders } from '@/lib/actions';
 import type { Order } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { DollarSign, ShoppingCart } from 'lucide-react';
+import { DollarSign, ShoppingCart, ArrowUp, ArrowDown } from 'lucide-react';
 import { subDays, format, startOfDay } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
   const [orders, setOrders] = React.useState<Order[]>([]);
@@ -31,7 +32,8 @@ export default function DashboardPage() {
     revenueToday,
     ordersToday,
     revenueOverTime,
-    topSellingItems
+    topSellingItems,
+    revenueGrowth,
   } = React.useMemo(() => {
     if (orders.length === 0) {
       return {
@@ -41,13 +43,16 @@ export default function DashboardPage() {
         ordersToday: 0,
         revenueOverTime: [],
         topSellingItems: [],
+        revenueGrowth: 0,
       };
     }
 
     const today = startOfDay(new Date());
+    const yesterday = startOfDay(subDays(new Date(), 1));
 
     let revenueToday = 0;
     let ordersToday = 0;
+    let revenueYesterday = 0;
 
     const completedOrders = orders.filter(o => o.status === 'completed');
 
@@ -55,9 +60,12 @@ export default function DashboardPage() {
     const totalOrders = completedOrders.length;
 
     completedOrders.forEach(order => {
-      if (new Date(order.timestamp) >= today) {
+      const orderDate = startOfDay(new Date(order.timestamp));
+      if (orderDate.getTime() === today.getTime()) {
         revenueToday += order.total || 0;
         ordersToday++;
+      } else if (orderDate.getTime() === yesterday.getTime()) {
+        revenueYesterday += order.total || 0;
       }
     });
 
@@ -86,6 +94,11 @@ export default function DashboardPage() {
       .sort(([, a], [, b]) => b - a)
       .slice(0, 5)
       .map(([name, quantity]) => ({ name, quantity }));
+        
+    const revenueGrowth = revenueYesterday > 0
+      ? ((revenueToday - revenueYesterday) / revenueYesterday) * 100
+      : revenueToday > 0 ? 100 : 0;
+
 
     return {
       totalRevenue,
@@ -94,6 +107,7 @@ export default function DashboardPage() {
       ordersToday,
       revenueOverTime: revenueOverTimeData,
       topSellingItems: topSellingItemsData,
+      revenueGrowth,
     };
   }, [orders]);
 
@@ -157,7 +171,10 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">Rs.{revenueToday.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">Revenue from today's completed orders.</p>
+               <p className={cn("text-xs text-muted-foreground flex items-center", revenueGrowth >= 0 ? "text-green-600" : "text-red-600")}>
+                {revenueGrowth >= 0 ? <ArrowUp className="h-4 w-4 mr-1" /> : <ArrowDown className="h-4 w-4 mr-1" />}
+                {revenueGrowth.toFixed(1)}% from yesterday
+              </p>
             </CardContent>
           </Card>
           <Card>
