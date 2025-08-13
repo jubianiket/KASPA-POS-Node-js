@@ -9,72 +9,80 @@ import { UtensilsCrossed, Check } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { formatDistanceToNow } from 'date-fns';
 
-type OrderStatus = 'New' | 'Preparing' | 'Ready';
+type OrderStatus = Order['status'];
 
-const statusColors: Record<OrderStatus, string> = {
-  New: 'bg-blue-500',
-  Preparing: 'bg-yellow-500',
-  Ready: 'bg-green-500',
+const statusColors: Record<NonNullable<OrderStatus>, string> = {
+  received: 'bg-blue-500',
+  preparing: 'bg-yellow-500',
+  ready: 'bg-green-500',
+  completed: 'bg-gray-500',
 };
 
-const statusBorderColors: Record<OrderStatus, string> = {
-    New: 'border-blue-500',
-    Preparing: 'border-yellow-500',
-    Ready: 'border-green-500',
+const statusBorderColors: Record<NonNullable<OrderStatus>, string> = {
+  received: 'border-blue-500',
+  preparing: 'border-yellow-500',
+  ready: 'border-green-500',
+  completed: 'border-gray-500',
 };
 
-export function OrderTicket({ order }: { order: Order }) {
-  const [status, setStatus] = React.useState<OrderStatus>('New');
+export function OrderTicket({ order, onStatusUpdate }: { order: Order; onStatusUpdate: (orderId: string, newStatus: OrderStatus) => void; }) {
   const [time, setTime] = React.useState('');
 
   React.useEffect(() => {
+    if (!order.timestamp) return;
     const update = () => setTime(formatDistanceToNow(new Date(order.timestamp), { addSuffix: true }));
     update();
     const timer = setInterval(update, 10000);
     return () => clearInterval(timer);
   }, [order.timestamp]);
   
-  const handleStatusChange = () => {
-    setStatus((prevStatus) => {
-      if (prevStatus === 'New') return 'Preparing';
-      if (prevStatus === 'Preparing') return 'Ready';
-      return 'Ready';
-    });
+  const handleStatusChange = (newStatus: OrderStatus) => {
+    onStatusUpdate(order.id, newStatus);
   };
 
   const getAction = () => {
-    switch (status) {
-      case 'New':
+    switch (order.status) {
+      case 'received':
         return (
-          <Button className="w-full" onClick={handleStatusChange}>
+          <Button className="w-full" onClick={() => handleStatusChange('preparing')}>
             <UtensilsCrossed className="mr-2 h-4 w-4" /> Start Preparing
           </Button>
         );
-      case 'Preparing':
+      case 'preparing':
         return (
-          <Button className="w-full" variant="secondary" onClick={handleStatusChange}>
+          <Button className="w-full" variant="secondary" onClick={() => handleStatusChange('ready')}>
             <Check className="mr-2 h-4 w-4" /> Mark as Ready
           </Button>
         );
-      case 'Ready':
+      case 'ready':
+         return (
+          <Button className="w-full" onClick={() => handleStatusChange('completed')}>
+            <Check className="mr-2 h-4 w-4" /> Complete Order
+          </Button>
+        );
+      case 'completed':
         return (
           <Button className="w-full" disabled variant="ghost" >
             Completed
           </Button>
         );
+      default:
+        return null;
     }
   };
+  
+  const statusText = order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Unknown';
 
   return (
-    <Card className={`flex flex-col border-t-4 ${statusBorderColors[status]}`}>
+    <Card className={`flex flex-col border-t-4 ${order.status ? statusBorderColors[order.status] : 'border-gray-500'}`}>
       <CardHeader className="flex flex-row justify-between items-start pb-2">
         <div>
           <CardTitle className="font-headline text-2xl">
-            {order.type === 'Dine In' ? `Table ${order.table}` : order.type}
+            {order.type === 'dine-in' ? `Table ${order.table}` : order.type}
           </CardTitle>
           <p className="text-sm text-muted-foreground">Order #{order.orderNumber}</p>
         </div>
-        <Badge className={statusColors[status]}>{status}</Badge>
+        <Badge className={order.status ? statusColors[order.status] : 'bg-gray-500'}>{statusText}</Badge>
       </CardHeader>
       <CardContent className="flex-grow space-y-2">
         <p className="text-sm text-muted-foreground">{time}</p>

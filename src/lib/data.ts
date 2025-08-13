@@ -10,7 +10,7 @@ export type MenuItem = {
 export type Order = {
   id: string;
   orderNumber: number;
-  type: 'Dine In' | 'Takeaway' | 'Delivery';
+  type: 'dine-in' | 'takeaway' | 'delivery';
   table?: number;
   items: {
     name: string;
@@ -18,6 +18,7 @@ export type Order = {
     notes?: string;
   }[];
   timestamp: string;
+  status: 'received' | 'preparing' | 'ready' | 'completed';
 };
 
 export const menuCategories: string[] = ['Appetizers', 'Main Course', 'Desserts', 'Beverages'];
@@ -43,7 +44,7 @@ export const orders: Order[] = [
   {
     id: 'a1b2c3d4',
     orderNumber: 101,
-    type: 'Dine In',
+    type: 'dine-in',
     table: 5,
     items: [
       { name: 'Margherita Pizza', quantity: 1 },
@@ -51,21 +52,23 @@ export const orders: Order[] = [
       { name: 'Fresh Orange Juice', quantity: 2 },
     ],
     timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+    status: 'received',
   },
   {
     id: 'e5f6g7h8',
     orderNumber: 102,
-    type: 'Takeaway',
+    type: 'takeaway',
     items: [
       { name: 'Steak Frites', quantity: 1, notes: 'Medium rare' },
       { name: 'Chocolate Lava Cake', quantity: 1 },
     ],
     timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    status: 'preparing',
   },
   {
     id: 'i9j0k1l2',
     orderNumber: 103,
-    type: 'Dine In',
+    type: 'dine-in',
     table: 2,
     items: [
       { name: 'Grilled Salmon', quantity: 2 },
@@ -73,15 +76,17 @@ export const orders: Order[] = [
       { name: 'Latte', quantity: 2 },
     ],
     timestamp: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
+    status: 'ready',
   },
   {
     id: 'm3n4o5p6',
     orderNumber: 104,
-    type: 'Delivery',
+    type: 'delivery',
     items: [
       { name: 'Chicken Parmesan', quantity: 1 },
       { name: 'Garlic Bread', quantity: 1 },
     ],
     timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    status: 'completed',
   },
 ];

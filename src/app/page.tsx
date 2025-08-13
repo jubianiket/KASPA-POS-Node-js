@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Minus, Trash2, X } from 'lucide-react';
+import { Plus, Minus, Trash2, X, CheckCircle } from 'lucide-react';
 import { menuCategories, type MenuItem } from '@/lib/data';
 import { getMenuItems, createOrder } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +25,7 @@ export default function PosPage() {
   const [order, setOrder] = React.useState<OrderItem[]>([]);
   const [orderType, setOrderType] = React.useState('dine-in');
   const [selectedTable, setSelectedTable] = React.useState('1');
+  const [orderStatus, setOrderStatus] = React.useState<'building' | 'sent'>('building');
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -44,6 +45,7 @@ export default function PosPage() {
   }, [activeCategory, menuItems]);
 
   const handleAddToOrder = (item: MenuItem) => {
+    if (orderStatus === 'sent') return;
     setOrder((prevOrder) => {
       const existingItem = prevOrder.find((orderItem) => orderItem.id === item.id);
       if (existingItem) {
@@ -56,6 +58,7 @@ export default function PosPage() {
   };
 
   const handleQuantityChange = (itemId: number, newQuantity: number) => {
+    if (orderStatus === 'sent') return;
     if (newQuantity <= 0) {
       setOrder((prevOrder) => prevOrder.filter((item) => item.id !== itemId));
     } else {
@@ -67,6 +70,7 @@ export default function PosPage() {
   
   const handleClearOrder = () => {
     setOrder([]);
+    setOrderStatus('building');
   };
 
   const orderTotal = React.useMemo(() => {
@@ -102,7 +106,7 @@ export default function PosPage() {
         title: "Order Sent",
         description: "The order has been successfully sent to the kitchen.",
       });
-      handleClearOrder();
+      setOrderStatus('sent');
     } catch (error) {
        toast({
         variant: "destructive",
@@ -230,12 +234,12 @@ export default function PosPage() {
                   <p className="text-sm text-primary">₹{item.price.toFixed(2)}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.id, item.quantity - 1)}><Minus className="h-4 w-4" /></Button>
+                  <Button disabled={orderStatus === 'sent'} variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.id, item.quantity - 1)}><Minus className="h-4 w-4" /></Button>
                   <span className="w-6 text-center">{item.quantity}</span>
-                   <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.id, item.quantity + 1)}><Plus className="h-4 w-4" /></Button>
+                   <Button disabled={orderStatus === 'sent'} variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.id, item.quantity + 1)}><Plus className="h-4 w-4" /></Button>
                 </div>
                 <p className="font-bold w-16 text-right">₹{(item.price * item.quantity).toFixed(2)}</p>
-                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleQuantityChange(item.id, 0)}><Trash2 className="h-4 w-4" /></Button>
+                <Button disabled={orderStatus === 'sent'} variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleQuantityChange(item.id, 0)}><Trash2 className="h-4 w-4" /></Button>
               </div>
             ))
           )}
@@ -243,6 +247,12 @@ export default function PosPage() {
         
         {order.length > 0 && (
           <div className="p-4 lg:p-6 border-t bg-card space-y-4">
+             {orderStatus === 'sent' && (
+              <div className="flex items-center justify-center text-green-600 font-semibold p-3 bg-green-100 rounded-md">
+                <CheckCircle className="h-5 w-5 mr-2" />
+                <span>Sent to Kitchen</span>
+              </div>
+            )}
             <div className="space-y-2">
               <div className="flex justify-between">
                 <p>Subtotal</p>
@@ -262,10 +272,14 @@ export default function PosPage() {
               <p>Total</p>
               <p>₹{totalWithTax.toFixed(2)}</p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Button size="lg" variant="outline">Charge</Button>
-              <Button size="lg" onClick={handleSendToKitchen}>Send to Kitchen</Button>
-            </div>
+             {orderStatus === 'building' ? (
+              <div className="grid grid-cols-2 gap-4">
+                <Button size="lg" variant="outline">Charge</Button>
+                <Button size="lg" onClick={handleSendToKitchen}>Send to Kitchen</Button>
+              </div>
+            ) : (
+               <Button size="lg" onClick={handleClearOrder} className="w-full">Start New Order</Button>
+            )}
           </div>
         )}
       </aside>

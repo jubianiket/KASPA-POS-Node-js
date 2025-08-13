@@ -1,6 +1,6 @@
 'use server';
 
-import { MenuItem } from './data';
+import { MenuItem, Order } from './data';
 import { createClient } from '@supabase/supabase-js'
 
 // Create a new Supabase client for server-side operations
@@ -48,4 +48,41 @@ export async function createOrder(orderData: any) {
     console.error(e);
     throw e;
   }
+}
+
+export async function getOrders(): Promise<Order[]> {
+  const { data, error } = await supabaseAdmin
+    .from('orders')
+    .select('*')
+    .order('date', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching orders:', error);
+    return [];
+  }
+
+  return data.map((order: any) => ({
+    id: order.id,
+    orderNumber: order.id,
+    type: order.order_type,
+    table: order.table_number,
+    items: order.items,
+    timestamp: order.date,
+    status: order.status
+  }));
+}
+
+export async function updateOrderStatus(orderId: string, status: Order['status']) {
+  const { data, error } = await supabaseAdmin
+    .from('orders')
+    .update({ status })
+    .eq('id', orderId)
+    .select();
+
+  if (error) {
+    console.error(`Error updating order ${orderId}:`, error);
+    throw new Error('Could not update order status.');
+  }
+
+  return data;
 }
