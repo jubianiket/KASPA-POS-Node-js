@@ -1,12 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Minus, Trash2, X, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Clock } from 'lucide-react';
 import { type MenuItem, type Order, menuCategories } from '@/lib/data';
 import { getMenuItems, createOrder, getOrders, updateOrderStatus } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -38,15 +37,7 @@ export default function PosPage() {
   const [isBillVisible, setIsBillVisible] = React.useState(false);
   const { toast } = useToast();
   const prevOrderStatus = React.useRef<Order['status'] | undefined>();
-
-  const fetchActiveOrder = async () => {
-    const allOrders = await getOrders();
-    // In a real multi-user environment, you'd scope this to the current cashier/terminal
-    const lastActiveOrder = allOrders.find(o => o.status !== 'completed');
-    if (lastActiveOrder) {
-      setCurrentOrder(lastActiveOrder);
-    }
-  };
+  const [billOrder, setBillOrder] = React.useState<Order | null>(null);
   
   React.useEffect(() => {
     if (currentOrder?.status === 'completed' && prevOrderStatus.current !== 'completed') {
@@ -64,8 +55,6 @@ export default function PosPage() {
       setLoading(true);
       const items = await getMenuItems();
       setMenuItems(items);
-      // Not fetching active order initially to start with a clean slate.
-      // await fetchActiveOrder();
       setLoading(false);
     };
     fetchInitialData();
@@ -76,7 +65,6 @@ export default function PosPage() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
         (payload) => {
-          console.log('POS Change received!', payload);
           if (payload.eventType === 'UPDATE') {
             const updatedOrder = payload.new as any;
              const formattedOrder: Order = {
@@ -109,11 +97,21 @@ export default function PosPage() {
     const menuItem = menuItems.find(mi => mi.name === orderItem.name);
     return {
         ...orderItem,
-        imageUrl: menuItem?.imageUrl || 'https://placehold.co/600x400.png',
-        aiHint: menuItem?.aiHint || '',
         price: menuItem?.price || 0,
         id: menuItem?.id || 0,
         category: menuItem?.category || 'N/A'
+    };
+  }) || [];
+
+  const billOrderItems = billOrder?.items.map(orderItem => {
+    const menuItem = menuItems.find(mi => mi.name === orderItem.name);
+    return {
+        ...orderItem,
+        price: menuItem?.price || 0,
+        id: menuItem?.id || 0,
+        category: menuItem?.category || 'N/A',
+        imageUrl: '',
+        aiHint: ''
     };
   }) || [];
 
@@ -240,23 +238,29 @@ export default function PosPage() {
   
   const handleBillClosed = () => {
     setIsBillVisible(false);
-    // The order is no longer cleared when the bill is closed.
-    // It will persist until manually cleared or a new order is made.
   };
 
   const handleGenerateBill = () => {
-    setIsBillVisible(true);
-    setCurrentOrder(null);
+    if (currentOrder) {
+      setBillOrder(currentOrder);
+      setIsBillVisible(true);
+      setCurrentOrder(null);
+    }
   }
 
   const tableNumbers = Array.from({ length: 12 }, (_, i) => i + 1);
   const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
   const canEditOrder = !isOrderSent || currentOrder?.status === 'received' || currentOrder?.status === 'completed';
 
+  const billSubtotal = billOrderItems.reduce((total, item) => total + (item.price || 0) * item.quantity, 0);
+  const billTax = billSubtotal * 0.05;
+  const billTotal = billSubtotal + billTax;
+
+
   return (
     <div className="flex h-[calc(100vh-1rem)] flex-col lg:flex-row">
-      {isBillVisible && currentOrder && (
-          <Bill order={currentOrder} orderItems={orderItems} total={totalWithTax} tax={tax} subtotal={orderTotal} onBillClose={handleBillClosed} />
+      {isBillVisible && billOrder && (
+          <Bill order={billOrder} orderItems={billOrderItems} total={billTotal} tax={billTax} subtotal={billSubtotal} onBillClose={handleBillClosed} />
       )}
       <div className="flex-1 p-4 lg:p-6 space-y-4 lg:space-y-6 overflow-y-auto">
         <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -307,12 +311,11 @@ export default function PosPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {loading ? (
-            Array.from({ length: 8 }).map((_, i) => (
+            Array.from({ length: 10 }).map((_, i) => (
               <Card key={i} className="overflow-hidden flex flex-col">
-                <Skeleton className="h-40 w-full" />
-                <CardContent className="p-4 flex-grow space-y-2">
+                 <CardContent className="p-4 flex-grow space-y-2">
                   <Skeleton className="h-5 w-3/4" />
                   <Skeleton className="h-4 w-1/2" />
                 </CardContent>
@@ -323,26 +326,14 @@ export default function PosPage() {
             ))
           ) : (
             filteredItems.map((item) => (
-              <Card key={item.id} className="overflow-hidden flex flex-col group cursor-pointer" onClick={() => handleAddToOrder(item)}>
-                <CardHeader className="p-0">
-                  <div className="relative h-40 w-full">
-                    <Image
-                      src={item.imageUrl}
-                      alt={item.name}
-                      fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      data-ai-hint={item.aiHint}
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="p-4 flex-grow">
-                  <h3 className="text-lg font-semibold font-headline">{item.name}</h3>
-                  <p className="text-muted-foreground text-sm">{item.category}</p>
+              <Card key={item.id} className="flex flex-col group cursor-pointer" onClick={() => handleAddToOrder(item)}>
+                <CardContent className="p-3 flex-grow flex flex-col justify-center">
+                  <h3 className="text-base font-semibold font-headline text-center">{item.name}</h3>
                 </CardContent>
-                <CardFooter className="flex justify-between items-center p-4 pt-0">
-                   <p className="text-lg font-bold text-primary">₹{item.price ? item.price.toFixed(2) : 'N/A'}</p>
-                  <Button size="sm" variant="outline" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Plus className="h-4 w-4 mr-2"/> Add
+                <CardFooter className="flex justify-between items-center p-3 pt-0">
+                   <p className="text-base font-bold text-primary">₹{item.price ? item.price.toFixed(2) : 'N/A'}</p>
+                  <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0">
+                    <Plus className="h-5 w-5"/>
                   </Button>
                 </CardFooter>
               </Card>
@@ -366,7 +357,6 @@ export default function PosPage() {
           ) : (
             orderItems.map((item) => (
               <div key={item.name} className="flex items-center gap-4">
-                <Image src={item.imageUrl} alt={item.name} width={48} height={48} className="rounded-md object-cover" data-ai-hint={item.aiHint} />
                 <div className="flex-1">
                   <p className="font-semibold">{item.name}</p>
                   <p className="text-sm text-primary">₹{item.price ? item.price.toFixed(2) : 'N/A'}</p>

@@ -10,12 +10,12 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import type { Order, MenuItem } from '@/lib/data';
+import type { Order } from '@/lib/data';
 import { X, Printer } from 'lucide-react';
 
 interface BillProps {
   order: Order;
-  orderItems: (MenuItem & { quantity: number })[];
+  orderItems: { name: string; quantity: number; price: number, id: number; category: string}[];
   subtotal: number;
   tax: number;
   total: number;

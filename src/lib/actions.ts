@@ -24,8 +24,6 @@ export async function getMenuItems(): Promise<MenuItem[]> {
       name: item.name,
       price: item.rate,
       category: item.category,
-      imageUrl: 'https://placehold.co/600x400.png',
-      aiHint: item.name.toLowerCase().split(' ').slice(0,2).join(' '),
   }));
 }
 
