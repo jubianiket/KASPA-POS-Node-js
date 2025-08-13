@@ -30,6 +30,9 @@ export function Bill({ order, orderItems, subtotal, tax, total, onBillClose }: B
   return (
     <Dialog open={true} onOpenChange={onBillClose}>
       <DialogContent className="max-w-sm p-0 print:shadow-none print:border-none">
+        <DialogHeader className="p-6 pb-0 print:hidden">
+            <DialogTitle className="font-headline text-2xl text-center">Order Bill</DialogTitle>
+        </DialogHeader>
         <div id="bill-content" className="p-6 font-mono text-sm text-black bg-white">
           <header className="text-center mb-4">
             <h2 className="text-lg font-bold font-headline">SwiftServe</h2>

@@ -11,6 +11,8 @@ export default function KdsPage() {
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [loading, setLoading] = React.useState(true);
   const { toast } = useToast();
+  // Using a ref to hold the channel so it's stable across re-renders.
+  const channelRef = React.useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   React.useEffect(() => {
     const fetchOrders = async () => {
@@ -21,8 +23,13 @@ export default function KdsPage() {
     };
 
     fetchOrders();
+    
+    // Ensure we only have one subscription active.
+    if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+    }
 
-    const channel = supabase
+    channelRef.current = supabase
       .channel('kds-orders-realtime')
       .on(
         'postgres_changes',
@@ -54,10 +61,15 @@ export default function KdsPage() {
       )
       .subscribe();
 
+    const channel = channelRef.current;
+    
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+        channelRef.current = null;
+      }
     };
-  }, []);
+  }, [toast]);
 
   const handleStatusUpdate = async (orderId: string, newStatus: Order['status']) => {
      try {
