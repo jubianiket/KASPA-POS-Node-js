@@ -1,7 +1,11 @@
-import { menuItems, menuCategories } from '@/lib/data';
+
+import { getMenuItems } from '@/lib/actions';
+import { menuCategories } from '@/lib/data';
 import { Separator } from '@/components/ui/separator';
 
-export default function MenuBoardPage() {
+export default async function MenuBoardPage() {
+  const menuItems = await getMenuItems();
+  
   return (
     <div className="bg-background min-h-screen p-6 md:p-10 lg:p-16">
       <header className="text-center mb-12">
