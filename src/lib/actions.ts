@@ -1,7 +1,7 @@
 
 'use server';
 
-import { MenuItem, Order } from './data';
+import { MenuItem, Order, RestaurantSettings } from './data';
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseAdmin = createClient(
@@ -142,4 +142,42 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
   }
 
   return data;
+}
+
+export async function getSettings(): Promise<RestaurantSettings | null> {
+    const { data, error } = await supabaseAdmin
+        .from('restaurant_settings')
+        .select('*')
+        .eq('id', 1)
+        .single();
+
+    if (error) {
+        console.error('Error fetching settings:', error);
+        return null;
+    }
+    return {
+        id: data.id,
+        restaurant_name: data.restaurant_name,
+        address: data.address,
+        phone: data.phone,
+        tax_enabled: data.tax_enabled,
+        tax_rate: data.tax_rate,
+        tax_id: data.tax_id,
+        dark_mode: data.dark_mode,
+        theme_color: data.theme_color
+    };
+}
+
+export async function updateSettings(settingsData: Partial<RestaurantSettings>) {
+    const { data, error } = await supabaseAdmin
+        .from('restaurant_settings')
+        .update(settingsData)
+        .eq('id', 1)
+        .select();
+
+    if (error) {
+        console.error('Error updating settings:', error);
+        throw new Error(`Error updating settings: ${error.message}`);
+    }
+    return data;
 }

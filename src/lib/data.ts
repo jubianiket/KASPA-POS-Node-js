@@ -31,3 +31,15 @@ export type Order = {
 };
 
 export const menuCategories: string[] = ['Appetizers', 'Main Course', 'Desserts', 'Beverages', 'Salads', 'Soups'];
+
+export type RestaurantSettings = {
+  id: number;
+  restaurant_name: string;
+  address: string;
+  phone: string;
+  tax_enabled: boolean;
+  tax_rate: number;
+  tax_id: string;
+  dark_mode: boolean;
+  theme_color: string;
+};
