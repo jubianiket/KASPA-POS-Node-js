@@ -1,10 +1,11 @@
 
 import { getMenuItems } from '@/lib/actions';
-import { menuCategories } from '@/lib/data';
 import { Separator } from '@/components/ui/separator';
 
 export default async function MenuBoardPage() {
   const menuItems = await getMenuItems();
+
+  const categories = [...new Set(menuItems.map(item => item.category))];
   
   return (
     <div className="bg-background min-h-screen p-6 md:p-10 lg:p-16">
@@ -14,7 +15,7 @@ export default async function MenuBoardPage() {
       </header>
       
       <main className="space-y-12">
-        {menuCategories.map(category => {
+        {categories.map(category => {
           const items = menuItems.filter(item => item.category === category);
           if (items.length === 0) return null;
 
