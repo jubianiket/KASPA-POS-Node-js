@@ -46,7 +46,7 @@ function KaspaLogo() {
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="h-6 w-6 text-primary-foreground"
+      className="h-6 w-6 text-sidebar-primary-foreground"
     >
       <path d="M6 3L12 9L6 15V3Z" fill="currentColor" />
       <path d="M6 15L12 9L18 3V9L12 15H6Z" fill="currentColor" />
@@ -59,7 +59,7 @@ function KaspaLogo() {
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { isMobile } = useSidebar();
+  const { isMobile, state } = useSidebar();
 
   return (
     <Sidebar variant="sidebar" collapsible="icon">
@@ -69,7 +69,7 @@ export function AppSidebar() {
             <div className="bg-primary p-2 rounded-lg">
               <KaspaLogo />
             </div>
-            <span className="font-bold text-lg font-headline text-sidebar-foreground">KASPA POS</span>
+            <span className="font-bold text-lg font-headline text-sidebar-foreground group-data-[collapsible=icon]:hidden">KASPA POS</span>
           </div>
           {isMobile && <SidebarTrigger />}
         </div>
@@ -100,14 +100,14 @@ export function AppSidebar() {
             <AvatarImage src="https://placehold.co/40x40.png" alt="User" data-ai-hint="user avatar" />
             <AvatarFallback>JD</AvatarFallback>
           </Avatar>
-          <div className="flex flex-col truncate">
+          <div className="flex flex-col truncate group-data-[collapsible=icon]:hidden">
              <span className="font-semibold text-sidebar-foreground">Jane Doe</span>
              <span className="text-xs text-muted-foreground">Cashier</span>
           </div>
         </div>
         <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
           <LogOut className="mr-2 h-4 w-4" />
-          Logout
+          <span className="group-data-[collapsible=icon]:hidden">Logout</span>
         </Button>
       </SidebarFooter>
     </Sidebar>
