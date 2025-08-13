@@ -244,6 +244,11 @@ export default function PosPage() {
     // It will persist until manually cleared or a new order is made.
   };
 
+  const handleGenerateBill = () => {
+    setIsBillVisible(true);
+    setCurrentOrder(null);
+  }
+
   const tableNumbers = Array.from({ length: 12 }, (_, i) => i + 1);
   const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
   const canEditOrder = !isOrderSent || currentOrder?.status === 'received' || currentOrder?.status === 'completed';
@@ -420,7 +425,7 @@ export default function PosPage() {
             )}
              {isOrderSent && currentOrder.status === 'completed' && (
                <div className="grid grid-cols-2 gap-4">
-                <Button size="lg" variant="secondary" onClick={() => setIsBillVisible(true)}>Generate Bill</Button>
+                <Button size="lg" variant="secondary" onClick={handleGenerateBill}>Generate Bill</Button>
                 <Button size="lg" onClick={handleAddMoreItems}>Add More Items</Button>
               </div>
             )}
