@@ -79,7 +79,7 @@ export default function PosPage() {
 
             setCurrentOrder(prevOrder => {
               if (prevOrder && prevOrder.id === formattedOrder.id) {
-                if (formattedOrder.status === 'completed') {
+                 if (prevOrder.status !== 'completed' && formattedOrder.status === 'completed') {
                    toast({
                     title: `Order #${formattedOrder.orderNumber} Ready for Billing`,
                     description: 'You can now generate the bill or add more items.',
@@ -120,7 +120,7 @@ export default function PosPage() {
 
  const handleAddToOrder = (item: MenuItem) => {
     const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
-    if (currentOrder && isOrderSent && currentOrder.status !== 'received') return;
+    if (currentOrder && isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'completed') return;
     
     setCurrentOrder((prevOrder) => {
        const newItems = prevOrder ? [...prevOrder.items] : [];
@@ -131,9 +131,11 @@ export default function PosPage() {
        } else {
            newItems.push({ name: item.name, quantity: 1, price: item.price });
        }
+       
+       const orderStatus = prevOrder?.status === 'completed' ? 'received' : prevOrder?.status || 'received';
 
        if (prevOrder) {
-           return { ...prevOrder, items: newItems };
+           return { ...prevOrder, items: newItems, status: orderStatus };
        }
        return {
            id: `temp-${Date.now()}`,
@@ -148,7 +150,7 @@ export default function PosPage() {
 
   const handleQuantityChange = (itemName: string, newQuantity: number) => {
      const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
-     if (!currentOrder || (isOrderSent && currentOrder.status !== 'received')) return;
+     if (!currentOrder || (isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'completed')) return;
     
     setCurrentOrder(prevOrder => {
         if (!prevOrder) return null;
@@ -232,11 +234,13 @@ export default function PosPage() {
   
   const handleBillClosed = () => {
     setIsBillVisible(false);
-    handleClearOrder();
+    // The order is no longer cleared when the bill is closed.
+    // It will persist until manually cleared or a new order is made.
   };
 
   const tableNumbers = Array.from({ length: 12 }, (_, i) => i + 1);
   const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
+  const canEditOrder = !isOrderSent || currentOrder?.status === 'received' || currentOrder?.status === 'completed';
 
   return (
     <div className="flex h-[calc(100vh-1rem)] flex-col lg:flex-row">
@@ -339,12 +343,12 @@ export default function PosPage() {
       <aside className="w-full lg:w-[380px] bg-card border-l flex flex-col">
         <div className="p-4 lg:p-6 flex justify-between items-center border-b">
           <h2 className="text-2xl font-headline font-bold">Current Order</h2>
-          <Button variant="ghost" size="icon" onClick={handleClearOrder} aria-label="Clear Order" disabled={isOrderSent && currentOrder?.status !== 'received'}>
+          <Button variant="ghost" size="icon" onClick={handleClearOrder} aria-label="Clear Order" disabled={isOrderSent && currentOrder?.status !== 'completed'}>
             <X className="h-5 w-5"/>
           </Button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
-          {!currentOrder ? (
+          {!currentOrder || currentOrder.items.length === 0 ? (
             <div className="text-center text-muted-foreground h-full flex items-center justify-center">
               <p>No items in order.</p>
             </div>
@@ -357,18 +361,18 @@ export default function PosPage() {
                   <p className="text-sm text-primary">₹{item.price ? item.price.toFixed(2) : 'N/A'}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button disabled={isOrderSent && currentOrder?.status !== 'received'} variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity - 1)}><Minus className="h-4 w-4" /></Button>
+                  <Button disabled={!canEditOrder} variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity - 1)}><Minus className="h-4 w-4" /></Button>
                   <span className="w-6 text-center">{item.quantity}</span>
-                   <Button disabled={isOrderSent && currentOrder?.status !== 'received'} variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity + 1)}><Plus className="h-4 w-4" /></Button>
+                   <Button disabled={!canEditOrder} variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQuantityChange(item.name, item.quantity + 1)}><Plus className="h-4 w-4" /></Button>
                 </div>
                 <p className="font-bold w-16 text-right">₹{((item.price || 0) * item.quantity).toFixed(2)}</p>
-                <Button disabled={isOrderSent && currentOrder?.status !== 'received'} variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleQuantityChange(item.name, 0)}><Trash2 className="h-4 w-4" /></Button>
+                <Button disabled={!canEditOrder} variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleQuantityChange(item.name, 0)}><Trash2 className="h-4 w-4" /></Button>
               </div>
             ))
           )}
         </div>
         
-        {currentOrder && (
+        {currentOrder && currentOrder.items.length > 0 && (
           <div className="p-4 lg:p-6 border-t bg-card space-y-4">
              {isOrderSent && currentOrder.status !== 'completed' && (
               <div className="flex items-center justify-center font-semibold p-3 bg-blue-100 dark:bg-blue-900/50 rounded-md">
@@ -420,5 +424,3 @@ export default function PosPage() {
     </div>
   );
 }
-
-    
