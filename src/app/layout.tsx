@@ -27,18 +27,14 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <ThemeProvider>
           <SidebarProvider>
-            <div className="relative min-h-screen">
-              <AppSidebar />
-              <SidebarInset>
-                {children}
-                <Toaster />
-              </SidebarInset>
-            </div>
+            <AppSidebar />
+            <SidebarInset>
+              {children}
+              <Toaster />
+            </SidebarInset>
           </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>
   );
 }
-
-    

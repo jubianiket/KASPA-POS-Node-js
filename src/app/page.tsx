@@ -363,7 +363,7 @@ export default function PosPage() {
   }
 
   const CurrentOrderContent = () => (
-     <div className="flex flex-col h-full">
+     <div className="flex flex-col h-full bg-card">
         <header className="p-4 lg:p-6 flex justify-between items-center border-b">
           <h2 className="text-2xl font-headline font-bold">Current Order</h2>
           {currentOrder && (
@@ -434,12 +434,12 @@ export default function PosPage() {
   );
 
   return (
-    <div className="h-screen flex flex-col lg:flex-row">
+    <div className="h-screen bg-background lg:grid lg:grid-cols-[1fr_380px]">
       {isBillVisible && billOrder && (
           <Bill order={billOrder} orderItems={billOrderItems} total={billTotal} tax={billTax} subtotal={billSubtotal} onBillClose={handleBillClosed} />
       )}
-      <div className="flex-1 flex flex-col overflow-y-auto">
-          <main className="flex-1 p-4 lg:p-6 space-y-4 lg:space-y-6 flex flex-col lg:mb-20">
+      <main className="flex flex-col h-full">
+          <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 flex-1 flex flex-col">
             <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
               <div>
                 <h1 className="text-3xl font-headline font-bold">Point of Sale</h1>
@@ -626,31 +626,29 @@ export default function PosPage() {
                   </Table>
               )}
             </div>
-          </main>
-      </div>
+          </div>
+          {isMobile && currentOrder && currentOrder.items.length > 0 && (
+            <Sheet open={isOrderSheetOpen} onOpenChange={setIsOrderSheetOpen}>
+              <SheetTrigger asChild>
+                  <div className="fixed bottom-0 left-0 right-0 bg-primary text-primary-foreground p-4 flex justify-between items-center shadow-lg cursor-pointer lg:hidden">
+                      <div className="flex items-center gap-3">
+                        <ShoppingBag />
+                        <span className="font-bold">{orderItems.length} {orderItems.length === 1 ? 'item' : 'items'}</span>
+                      </div>
+                      <span className="text-xl font-bold">Rs.{totalWithTax.toFixed(2)}</span>
+                  </div>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-[90vh] p-0 flex flex-col">
+                  <CurrentOrderContent />
+              </SheetContent>
+            </Sheet>
+          )}
+      </main>
       
-      {isMobile ? (
-         currentOrder && currentOrder.items.length > 0 && (
-           <Sheet open={isOrderSheetOpen} onOpenChange={setIsOrderSheetOpen}>
-             <SheetTrigger asChild>
-                <div className="fixed bottom-0 left-0 right-0 bg-primary text-primary-foreground p-4 flex justify-between items-center shadow-lg cursor-pointer lg:hidden">
-                    <div className="flex items-center gap-3">
-                       <ShoppingBag />
-                       <span className="font-bold">{orderItems.length} {orderItems.length === 1 ? 'item' : 'items'}</span>
-                    </div>
-                    <span className="text-xl font-bold">Rs.{totalWithTax.toFixed(2)}</span>
-                </div>
-             </SheetTrigger>
-             <SheetContent side="bottom" className="h-[90vh] p-0 flex flex-col">
-                <CurrentOrderContent />
-             </SheetContent>
-           </Sheet>
-         )
-      ) : (
-        <aside className="w-full lg:w-[380px] bg-card border-l flex-col hidden lg:flex">
-          <CurrentOrderContent />
-        </aside>
-      )}
+      <aside className="w-full lg:w-[380px] bg-card border-l flex-col hidden lg:flex">
+        <CurrentOrderContent />
+      </aside>
+      
     </div>
   );
 }
