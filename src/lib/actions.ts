@@ -71,8 +71,7 @@ export async function getOrders(): Promise<Order[]> {
     tax: order.gst,
     total: order.total,
     phone_no: order.phone_no,
-    flat_no: order.flat_no,
-    building_no: order.building_no,
+    address: order.address,
   }));
 }
 
@@ -84,11 +83,8 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
   if (updatePayload.phone_no) {
     updatePayload.phone_no = updatePayload.phone_no;
   }
-  if (updatePayload.flat_no) {
-    updatePayload.flat_no = updatePayload.flat_no;
-  }
-  if (updatePayload.building_no) {
-    updatePayload.building_no = updatePayload.building_no;
+  if (updatePayload.address) {
+    updatePayload.address = updatePayload.address;
   }
   
   const { data, error } = await supabaseAdmin

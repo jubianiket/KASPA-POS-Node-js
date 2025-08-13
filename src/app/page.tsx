@@ -46,8 +46,7 @@ export default function PosPage() {
   const [currentOrder, setCurrentOrder] = React.useState<Order | null>(null);
   const [orderType, setOrderType] = React.useState<'dine-in' | 'delivery'>('dine-in');
   const [selectedTable, setSelectedTable] = React.useState('1');
-  const [deliveryFlatNo, setDeliveryFlatNo] = React.useState('');
-  const [deliveryBuildingNo, setDeliveryBuildingNo] = React.useState('');
+  const [deliveryAddress, setDeliveryAddress] = React.useState('');
   const [deliveryPhone, setDeliveryPhone] = React.useState('');
   const [isBillVisible, setIsBillVisible] = React.useState(false);
   const { toast } = useToast();
@@ -92,8 +91,7 @@ export default function PosPage() {
               timestamp: updatedOrder.date,
               status: updatedOrder.status,
               phone_no: updatedOrder.phone_no,
-              flat_no: updatedOrder.flat_no,
-              building_no: updatedOrder.building_no,
+              address: updatedOrder.address,
             };
 
             if (currentOrder && currentOrder.id === formattedOrder.id) {
@@ -217,8 +215,8 @@ export default function PosPage() {
       return;
     }
 
-    if (orderType === 'delivery' && (!deliveryPhone || !deliveryFlatNo || !deliveryBuildingNo)) {
-      toast({ variant: "destructive", title: "Missing Information", description: "Please enter phone, flat, and building for delivery orders." });
+    if (orderType === 'delivery' && (!deliveryPhone || !deliveryAddress)) {
+      toast({ variant: "destructive", title: "Missing Information", description: "Please enter phone and address for delivery orders." });
       return;
     }
     
@@ -235,8 +233,7 @@ export default function PosPage() {
       orderData.table_number = parseInt(selectedTable, 10);
     } else {
       orderData.phone_no = deliveryPhone;
-      orderData.flat_no = deliveryFlatNo;
-      orderData.building_no = deliveryBuildingNo;
+      orderData.address = deliveryAddress;
     }
 
     try {
@@ -256,8 +253,7 @@ export default function PosPage() {
             timestamp: newOrder.date,
             status: newOrder.status,
             phone_no: newOrder.phone_no,
-            flat_no: newOrder.flat_no,
-            building_no: newOrder.building_no,
+            address: newOrder.address,
           };
           setCurrentOrder(formattedOrder);
           toast({ title: "Order Sent", description: "The order has been successfully sent to the kitchen." });
@@ -338,13 +334,9 @@ export default function PosPage() {
                             <Label htmlFor="phone">Phone Number</Label>
                             <Input id="phone" placeholder="Enter phone number" value={deliveryPhone} onChange={(e) => setDeliveryPhone(e.target.value)} />
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="flat_no">Flat No.</Label>
-                            <Input id="flat_no" placeholder="Enter flat number" value={deliveryFlatNo} onChange={(e) => setDeliveryFlatNo(e.target.value)} />
-                        </div>
                         <div className="space-y-2 md:col-span-2">
-                            <Label htmlFor="building_no">Building/Apartment No.</Label>
-                            <Input id="building_no" placeholder="Enter building details" value={deliveryBuildingNo} onChange={(e) => setDeliveryBuildingNo(e.target.value)} />
+                            <Label htmlFor="address">Address</Label>
+                            <Textarea id="address" placeholder="Enter delivery address" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} />
                         </div>
                     </div>
                 </CardContent>
