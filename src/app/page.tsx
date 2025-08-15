@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Minus, Trash2, X, Search, Phone, Home, ShoppingBag, History } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Search, Phone, Home, ShoppingBag, History, Table as TableIcon } from 'lucide-react';
 import { type MenuItem, type Order, menuCategories } from '@/lib/data';
 import { getMenuItems, createOrder, getOrders, updateOrderStatus } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +37,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { format } from 'date-fns';
+import { TableCard } from '@/components/pos/table-card';
 
 interface OrderItem extends MenuItem {
   quantity: number;
@@ -55,7 +56,7 @@ export default function PosPage() {
   const [loading, setLoading] = React.useState(true);
   const [activeCategory, setActiveCategory] = React.useState('All');
   const [currentOrder, setCurrentOrder] = React.useState<Order | null>(null);
-  const [orderType, setOrderType] = React.useState<'dine-in' | 'delivery' | 'active-orders'>('dine-in');
+  const [orderType, setOrderType] = React.useState<'dine-in' | 'delivery' | 'active-orders' | 'table-view'>('dine-in');
   const [selectedTable, setSelectedTable] = React.useState('');
   const [selectedSeat, setSelectedSeat] = React.useState('');
   const [deliveryAddress, setDeliveryAddress] = React.useState('');
@@ -75,6 +76,8 @@ export default function PosPage() {
     const tab = searchParams.get('tab');
     if (tab === 'active-orders') {
       setOrderType('active-orders');
+    } else if (tab === 'table-view') {
+        setOrderType('table-view');
     }
   }, [searchParams]);
 
@@ -352,14 +355,17 @@ export default function PosPage() {
     setBillOrder(null);
   };
 
-  const handleGenerateBill = async () => {
-    if (currentOrder) {
+  const handleGenerateBill = async (orderToBill?: Order) => {
+    const targetOrder = orderToBill || currentOrder;
+    if (targetOrder) {
       try {
-        await updateOrderStatus(currentOrder.id, 'completed');
-        setBillOrder({ ...currentOrder, status: 'completed' }); 
+        await updateOrderStatus(targetOrder.id, 'completed');
+        setBillOrder({ ...targetOrder, status: 'completed' }); 
         setIsBillVisible(true);
-        setAllOrders(prev => prev.map(o => o.id === currentOrder.id ? {...o, status: 'completed'} : o));
-        handleClearOrder();
+        setAllOrders(prev => prev.map(o => o.id === targetOrder.id ? {...o, status: 'completed'} : o));
+        if (currentOrder && currentOrder.id === targetOrder.id) {
+          handleClearOrder();
+        }
         if(isMobile) setIsOrderSheetOpen(false);
       } catch (error) {
          toast({ variant: "destructive", title: "Failed to Generate Bill", description: "Could not update the order status. Please try again." });
@@ -379,6 +385,14 @@ export default function PosPage() {
     handleClearOrder();
     setOrderType('dine-in');
   }
+  
+  const handleViewTableOrder = (order: Order) => {
+    setCurrentOrder(order);
+    setOrderType('dine-in'); // Switch to a view where the order can be edited
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', 'dine-in');
+    router.replace(url.toString(), { scroll: false });
+  };
 
   const CurrentOrderContent = () => (
      <div className="flex flex-col h-full bg-card">
@@ -443,7 +457,7 @@ export default function PosPage() {
               <p>Rs.{totalWithTax.toFixed(2)}</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Button size="lg" variant="secondary" onClick={handleGenerateBill} disabled={!currentOrder || !currentOrder.status || currentOrder.status !== 'ready'}>Generate Bill</Button>
+              <Button size="lg" variant="secondary" onClick={() => handleGenerateBill()} disabled={!currentOrder || !currentOrder.status || currentOrder.status !== 'ready'}>Generate Bill</Button>
               <Button size="lg" onClick={handleSendToKitchen}>{isOrderSent ? 'Add More Items' : 'Send to Kitchen'}</Button>
             </div>
           </footer>
@@ -469,7 +483,7 @@ export default function PosPage() {
               <div className="flex items-center gap-2">
                  <Button onClick={handleNewOrder}>New Order</Button>
                 <Tabs value={orderType} onValueChange={(v) => {
-                  const newOrderType = v as 'dine-in' | 'delivery' | 'active-orders';
+                  const newOrderType = v as 'dine-in' | 'delivery' | 'active-orders' | 'table-view';
                   setOrderType(newOrderType);
                   if (newOrderType === 'dine-in' || newOrderType === 'delivery') {
                     handleClearOrder();
@@ -480,6 +494,7 @@ export default function PosPage() {
                 }} className="w-full sm:w-auto">
                   <TabsList>
                     <TabsTrigger value="dine-in">Dine In</TabsTrigger>
+                    <TabsTrigger value="table-view">Table View</TabsTrigger>
                     <TabsTrigger value="delivery">Delivery</TabsTrigger>
                     <TabsTrigger value="active-orders">Active Orders</TabsTrigger>
                   </TabsList>
@@ -604,6 +619,23 @@ export default function PosPage() {
                 </Card>
             )}
 
+             {orderType === 'table-view' && (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {tableNumbers.map(tableNumber => {
+                    const tableOrder = activeOrders.find(o => o.type === 'dine-in' && o.table === tableNumber);
+                    return (
+                      <TableCard 
+                        key={tableNumber}
+                        tableNumber={tableNumber}
+                        order={tableOrder}
+                        onViewOrder={handleViewTableOrder}
+                        onGenerateBill={handleGenerateBill}
+                      />
+                    );
+                  })}
+                </div>
+            )}
+
             {orderType === 'delivery' && (
                 <Card>
                     <CardContent className="pt-6">
@@ -621,68 +653,72 @@ export default function PosPage() {
                 </Card>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search for an item..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 w-full"
-                    />
-                </div>
-                <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                <Button
-                    variant={activeCategory === 'All' ? 'default' : 'outline'}
-                    onClick={() => setActiveCategory('All')}
-                    className="rounded-full flex-shrink-0"
-                >
-                    All
-                </Button>
-                {menuCategories.map((category) => (
+            {(orderType === 'dine-in' || orderType === 'delivery') && (
+              <>
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search for an item..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10 w-full"
+                        />
+                    </div>
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2">
                     <Button
-                    key={category}
-                    variant={activeCategory === category ? 'default' : 'outline'}
-                    onClick={() => setActiveCategory(category)}
-                    className="rounded-full flex-shrink-0"
+                        variant={activeCategory === 'All' ? 'default' : 'outline'}
+                        onClick={() => setActiveCategory('All')}
+                        className="rounded-full flex-shrink-0"
                     >
-                    {category}
+                        All
                     </Button>
-                ))}
-                </div>
-            </div>
-            
-            <div className="flex-grow overflow-auto border rounded-lg">
-              {loading ? (
-                 <div className="p-4 space-y-4">
-                    {Array.from({ length: 10 }).map((_, i) => (
-                        <div key={i} className="flex items-center space-x-4">
-                            <Skeleton className="h-5 flex-grow" />
-                            <Skeleton className="h-5 w-20" />
-                        </div>
+                    {menuCategories.map((category) => (
+                        <Button
+                        key={category}
+                        variant={activeCategory === category ? 'default' : 'outline'}
+                        onClick={() => setActiveCategory(category)}
+                        className="rounded-full flex-shrink-0"
+                        >
+                        {category}
+                        </Button>
                     ))}
+                    </div>
                 </div>
-              ) : (
-                 <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Item</TableHead>
-                        <TableHead className="hidden sm:table-cell">Portion</TableHead>
-                        <TableHead className="text-right">Price</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredItems.map((item) => (
-                        <TableRow key={item.id} onClick={() => handleAddToOrder(item)} className="cursor-pointer">
-                          <TableCell className="font-medium">{item.name}</TableCell>
-                          <TableCell className="hidden sm:table-cell">{item.portion || 'Regular'}</TableCell>
-                          <TableCell className="text-right font-semibold text-primary">Rs.{item.price ? item.price.toFixed(2) : 'N/A'}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-              )}
-            </div>
+                
+                <div className="flex-grow overflow-auto border rounded-lg">
+                  {loading ? (
+                     <div className="p-4 space-y-4">
+                        {Array.from({ length: 10 }).map((_, i) => (
+                            <div key={i} className="flex items-center space-x-4">
+                                <Skeleton className="h-5 flex-grow" />
+                                <Skeleton className="h-5 w-20" />
+                            </div>
+                        ))}
+                    </div>
+                  ) : (
+                     <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Item</TableHead>
+                            <TableHead className="hidden sm:table-cell">Portion</TableHead>
+                            <TableHead className="text-right">Price</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredItems.map((item) => (
+                            <TableRow key={item.id} onClick={() => handleAddToOrder(item)} className="cursor-pointer">
+                              <TableCell className="font-medium">{item.name}</TableCell>
+                              <TableCell className="hidden sm:table-cell">{item.portion || 'Regular'}</TableCell>
+                              <TableCell className="text-right font-semibold text-primary">Rs.{item.price ? item.price.toFixed(2) : 'N/A'}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                  )}
+                </div>
+              </>
+            )}
           </div>
           {isMobile && currentOrder && currentOrder.items.length > 0 && (
             <Sheet open={isOrderSheetOpen} onOpenChange={setIsOrderSheetOpen}>
