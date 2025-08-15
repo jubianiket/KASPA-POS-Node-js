@@ -97,10 +97,10 @@ export default function PosPage() {
 
   const tableOrderHistory = React.useMemo(() => {
     if (!selectedTable) return [];
-    return completedOrders
-      .filter(order => order.type === 'dine-in' && String(order.table) === selectedTable)
+    return allOrders
+      .filter(order => order.type === 'dine-in' && String(order.table) === selectedTable && order.status === 'completed')
       .slice(0, 5); // Get last 5 completed orders for the table
-  }, [completedOrders, selectedTable]);
+  }, [allOrders, selectedTable]);
   
   React.useEffect(() => {
     if (currentOrder?.status === 'ready' && prevOrderStatus.current !== 'ready') {
@@ -202,7 +202,7 @@ export default function PosPage() {
 
  const handleAddToOrder = (item: MenuItem) => {
     const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
-    if (isOrderSent && currentOrder.status !== 'received' && currentOrder.status !== 'ready' && currentOrder.status !== 'completed') return;
+    if (isOrderSent && currentOrder.status === 'preparing') return;
     
     setCurrentOrder((prevOrder) => {
        const newItems = prevOrder ? [...prevOrder.items] : [];
@@ -214,7 +214,7 @@ export default function PosPage() {
            newItems.push({ name: item.name, quantity: 1, price: item.price, portion: item.portion });
        }
        
-       const orderStatus = prevOrder?.status === 'ready' ? 'received' : prevOrder?.status || 'received';
+       const orderStatus = prevOrder?.status === 'ready' ? 'ready' : 'received';
 
        if (prevOrder) {
            return { ...prevOrder, items: newItems, status: orderStatus };
@@ -239,7 +239,7 @@ export default function PosPage() {
 
   const handleQuantityChange = (itemName: string, newQuantity: number) => {
      const isOrderSent = currentOrder && currentOrder.id && !String(currentOrder.id).startsWith('temp-');
-     if (!isOrderSent && currentOrder?.status !== 'received' && currentOrder?.status !== 'ready' && currentOrder?.status !== 'completed') return;
+     if (isOrderSent && currentOrder.status === 'preparing') return;
     
     setCurrentOrder(prevOrder => {
         if (!prevOrder) return null;
@@ -467,7 +467,7 @@ export default function PosPage() {
               <p>Rs.{totalWithTax.toFixed(2)}</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Button size="lg" variant="secondary" onClick={() => currentOrder && handleGenerateBill(currentOrder)} disabled={!currentOrder || !currentOrder.status || currentOrder.status !== 'ready'}>Generate Bill</Button>
+              <Button size="lg" variant="secondary" onClick={() => currentOrder && handleGenerateBill(currentOrder)} disabled={!currentOrder}>Generate Bill</Button>
               <Button size="lg" onClick={handleSendToKitchen}>{isOrderSent ? 'Add More Items' : 'Send to Kitchen'}</Button>
             </div>
           </footer>

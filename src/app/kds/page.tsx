@@ -62,15 +62,9 @@ export default function KdsPage() {
      try {
       await updateOrderStatus(orderId, newStatus);
       // The realtime subscription will handle the UI update, but we can optimistically update here too.
-      if (newStatus === 'completed') {
-        setOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
-      } else {
-        setOrders(prevOrders => 
-          prevOrders.map(order => 
-            order.id === orderId ? { ...order, status: newStatus } : order
-          )
-        );
-      }
+      // This is for KDS only. If an order is marked 'completed' here, it just means kitchen is done.
+      // It will disappear from KDS screen but remain in POS until bill is generated.
+      setOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
     } catch (error) {
       toast({
         variant: "destructive",
