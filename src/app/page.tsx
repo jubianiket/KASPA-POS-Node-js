@@ -3,10 +3,10 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Minus, Trash2, X, Search, Phone, Home, ShoppingBag } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Search, Phone, Home, ShoppingBag, History } from 'lucide-react';
 import { type MenuItem, type Order, menuCategories } from '@/lib/data';
 import { getMenuItems, createOrder, getOrders, updateOrderStatus } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -30,6 +30,13 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import { format } from 'date-fns';
 
 interface OrderItem extends MenuItem {
   quantity: number;
@@ -58,7 +65,7 @@ export default function PosPage() {
   const prevOrderStatus = React.useRef<Order['status'] | undefined>();
   const [billOrder, setBillOrder] = React.useState<Order | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [activeOrders, setActiveOrders] = React.useState<Order[]>([]);
+  const [allOrders, setAllOrders] = React.useState<Order[]>([]);
   const searchParams = useSearchParams();
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -71,15 +78,26 @@ export default function PosPage() {
     }
   }, [searchParams]);
 
+  const activeOrders = React.useMemo(() => {
+    return allOrders.filter(o => o.status !== 'completed');
+  }, [allOrders]);
+  
+  const completedOrders = React.useMemo(() => {
+    return allOrders.filter(o => o.status === 'completed');
+  }, [allOrders]);
+
   const occupiedTableSeats = React.useMemo(() => {
     return activeOrders
       .filter(order => order.type === 'dine-in' && order.table && order.seat && order.status !== 'completed')
       .map(order => `${order.table}-${order.seat}`);
   }, [activeOrders]);
 
-  const activeOrdersForList = React.useMemo(() => {
-    return activeOrders.filter(order => order.status !== 'completed');
-  }, [activeOrders]);
+  const tableOrderHistory = React.useMemo(() => {
+    if (!selectedTable) return [];
+    return completedOrders
+      .filter(order => order.type === 'dine-in' && String(order.table) === selectedTable)
+      .slice(0, 5); // Get last 5 completed orders for the table
+  }, [completedOrders, selectedTable]);
   
   React.useEffect(() => {
     if (currentOrder?.status === 'ready' && prevOrderStatus.current !== 'ready') {
@@ -95,12 +113,12 @@ export default function PosPage() {
   React.useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
-      const [items, allOrders] = await Promise.all([
+      const [items, fetchedOrders] = await Promise.all([
           getMenuItems(),
           getOrders(),
       ]);
       setMenuItems(items);
-      setActiveOrders(allOrders.filter(o => o.status !== 'completed'));
+      setAllOrders(fetchedOrders);
       setLoading(false);
     };
     fetchInitialData();
@@ -112,9 +130,8 @@ export default function PosPage() {
         { event: '*', schema: 'public', table: 'orders' },
         (payload) => {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'DELETE') {
-            getOrders().then(allOrders => {
-              const currentActiveOrders = allOrders.filter(o => o.status !== 'completed');
-              setActiveOrders(currentActiveOrders);
+            getOrders().then(fetchedOrders => {
+              setAllOrders(fetchedOrders);
               
               if (currentOrder && payload.eventType === 'UPDATE' && payload.new.id === currentOrder.id) {
                  const updatedOrder = payload.new as any;
@@ -313,7 +330,7 @@ export default function PosPage() {
           setCurrentOrder(formattedOrder);
           
           const allOrders = await getOrders();
-          setActiveOrders(allOrders.filter(o => o.status !== 'completed'));
+          setAllOrders(allOrders);
           
           if (orderType === 'delivery') {
             setDeliveryAddress('');
@@ -341,7 +358,7 @@ export default function PosPage() {
         await updateOrderStatus(currentOrder.id, 'completed');
         setBillOrder({ ...currentOrder, status: 'completed' }); 
         setIsBillVisible(true);
-        setActiveOrders(prev => prev.filter(o => o.id !== currentOrder.id));
+        setAllOrders(prev => prev.map(o => o.id === currentOrder.id ? {...o, status: 'completed'} : o));
         handleClearOrder();
         if(isMobile) setIsOrderSheetOpen(false);
       } catch (error) {
@@ -426,7 +443,7 @@ export default function PosPage() {
               <p>Rs.{totalWithTax.toFixed(2)}</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Button size="lg" variant="secondary" onClick={handleGenerateBill} disabled={!currentOrder || !currentOrder.status || currentOrder.status !== 'completed'}>Generate Bill</Button>
+              <Button size="lg" variant="secondary" onClick={handleGenerateBill} disabled={!currentOrder || !currentOrder.status || currentOrder.status !== 'ready'}>Generate Bill</Button>
               <Button size="lg" onClick={handleSendToKitchen}>{isOrderSent ? 'Add More Items' : 'Send to Kitchen'}</Button>
             </div>
           </footer>
@@ -471,6 +488,7 @@ export default function PosPage() {
             </header>
 
             {orderType === 'dine-in' && (
+              <>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                     <div className="flex items-center gap-2">
                       <Label>Table:</Label>
@@ -509,14 +527,49 @@ export default function PosPage() {
                       </div>
                     )}
                 </div>
+
+                {selectedTable && tableOrderHistory.length > 0 && (
+                   <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg font-headline flex items-center gap-2">
+                          <History className="h-5 w-5" />
+                          Order History for Table {selectedTable}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          <Accordion type="single" collapsible className="w-full">
+                            {tableOrderHistory.map(order => (
+                              <AccordionItem value={`order-${order.id}`} key={order.id}>
+                                <AccordionTrigger>
+                                  <div className="flex justify-between w-full pr-4">
+                                    <span>Order #{order.orderNumber} - {format(new Date(order.timestamp), 'dd/MM/yyyy, hh:mm a')}</span>
+                                    <span className="font-semibold">Rs.{order.total?.toFixed(2)}</span>
+                                  </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                   <ul className="pl-4 space-y-1 text-muted-foreground">
+                                    {order.items.map((item, index) => (
+                                      <li key={index}>
+                                        {item.quantity}x {item.name} {item.portion && `(${item.portion})`}
+                                      </li>
+                                    ))}
+                                   </ul>
+                                </AccordionContent>
+                              </AccordionItem>
+                            ))}
+                          </Accordion>
+                      </CardContent>
+                   </Card>
+                )}
+              </>
             )}
             
             {orderType === 'active-orders' && (
                 <Card>
                     <CardContent className="pt-6 max-h-96 overflow-y-auto">
-                       {activeOrdersForList.length > 0 ? (
+                       {activeOrders.length > 0 ? (
                         <div className="space-y-2">
-                            {activeOrdersForList.map(order => (
+                            {activeOrders.map(order => (
                                 <div key={order.id} className="flex items-center justify-between p-2 border rounded-md">
                                     <div>
                                         {order.type === 'dine-in' ? (
