@@ -82,6 +82,8 @@ export default function PosPage() {
   }, [searchParams]);
 
   const activeOrders = React.useMemo(() => {
+    // In POS, an order is active until the bill is generated and it's marked "completed".
+    // The KDS "completed" status is internal to the kitchen and doesn't affect POS view.
     return allOrders.filter(o => o.status !== 'completed');
   }, [allOrders]);
   
@@ -400,7 +402,7 @@ export default function PosPage() {
     
     // Update URL without reloading the page
     const url = new URL(window.location.href);
-    url.searchParams.set('tab', 'dine-in');
+    url.searchParams.delete('tab');
     router.replace(url.toString(), { scroll: false });
   };
 
@@ -476,11 +478,11 @@ export default function PosPage() {
   );
 
   return (
-    <div className="h-screen bg-background lg:grid lg:grid-cols-[1fr_380px]">
+    <div className="lg:grid lg:grid-cols-[1fr_380px]">
       {isBillVisible && billOrder && (
           <Bill order={billOrder} orderItems={billOrderItems} total={billTotal} tax={billTax} subtotal={billSubtotal} onBillClose={handleBillClosed} />
       )}
-      <main className="flex flex-col h-full">
+      <main className="flex flex-col h-screen">
           <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 flex-1 flex flex-col">
             <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
               <div className="flex items-center gap-4">
@@ -742,6 +744,9 @@ export default function PosPage() {
                   </div>
               </SheetTrigger>
               <SheetContent side="bottom" className="h-[90vh] p-0 flex flex-col">
+                  <SheetHeader className="p-0">
+                    <SheetTitle className="sr-only">Current Order</SheetTitle>
+                  </SheetHeader>
                   <CurrentOrderContent />
               </SheetContent>
             </Sheet>
@@ -755,3 +760,5 @@ export default function PosPage() {
     </div>
   );
 }
+
+    
