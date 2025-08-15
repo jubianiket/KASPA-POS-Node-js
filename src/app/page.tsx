@@ -96,13 +96,6 @@ export default function PosPage() {
       .filter(order => order.type === 'dine-in' && order.table && order.seat && order.status !== 'completed')
       .map(order => `${order.table}-${order.seat}`);
   }, [activeOrders]);
-
-  const tableOrderHistory = React.useMemo(() => {
-    if (!selectedTable) return [];
-    return allOrders
-      .filter(order => order.type === 'dine-in' && String(order.table) === selectedTable && order.status === 'completed')
-      .slice(0, 5); // Get last 5 completed orders for the table
-  }, [allOrders, selectedTable]);
   
   React.useEffect(() => {
     if (currentOrder?.status === 'ready' && prevOrderStatus.current !== 'ready') {
@@ -554,40 +547,6 @@ export default function PosPage() {
                       </div>
                     )}
                 </div>
-
-                {selectedTable && tableOrderHistory.length > 0 && (
-                   <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg font-headline flex items-center gap-2">
-                          <History className="h-5 w-5" />
-                          Order History for Table {selectedTable}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                          <Accordion type="single" collapsible className="w-full">
-                            {tableOrderHistory.map(order => (
-                              <AccordionItem value={`order-${order.id}`} key={order.id}>
-                                <AccordionTrigger>
-                                  <div className="flex justify-between w-full pr-4">
-                                    <span>Order #{order.orderNumber} - {format(new Date(order.timestamp), 'dd/MM/yyyy, hh:mm a')}</span>
-                                    <span className="font-semibold">Rs.{order.total?.toFixed(2)}</span>
-                                  </div>
-                                </AccordionTrigger>
-                                <AccordionContent>
-                                   <ul className="pl-4 space-y-1 text-muted-foreground">
-                                    {order.items.map((item, index) => (
-                                      <li key={index}>
-                                        {item.quantity}x {item.name} {item.portion && `(${item.portion})`}
-                                      </li>
-                                    ))}
-                                   </ul>
-                                </AccordionContent>
-                              </AccordionItem>
-                            ))}
-                          </Accordion>
-                      </CardContent>
-                   </Card>
-                )}
               </>
             )}
             
@@ -760,5 +719,3 @@ export default function PosPage() {
     </div>
   );
 }
-
-    
