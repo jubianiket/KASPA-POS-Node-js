@@ -68,15 +68,15 @@ export function TableCard({ tableNumber, order, onViewOrder, onGenerateBill }: T
           <>
             <Button
               className="w-full"
-              variant={order.status === 'ready' ? 'default' : 'outline'}
+              variant="outline"
               onClick={() => onViewOrder(order)}
             >
-              {order.status === 'ready' ? 'Add Items' : 'View Order'}
+              Add / View Order
             </Button>
             {order.status === 'ready' && (
               <Button
                 className="w-full"
-                variant="secondary"
+                variant="default"
                 onClick={() => onGenerateBill(order)}
               >
                 Generate Bill

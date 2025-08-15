@@ -355,17 +355,23 @@ export default function PosPage() {
     setBillOrder(null);
   };
 
-  const handleGenerateBill = async (orderToBill?: Order) => {
-    const targetOrder = orderToBill || currentOrder;
-    if (targetOrder) {
+  const handleGenerateBill = async (orderToBill: Order) => {
+    if (orderToBill) {
       try {
-        await updateOrderStatus(targetOrder.id, 'completed');
-        setBillOrder({ ...targetOrder, status: 'completed' }); 
+        await updateOrderStatus(orderToBill.id, 'completed');
+        
+        // Fetch fresh orders to update the entire state
+        const updatedOrders = await getOrders();
+        setAllOrders(updatedOrders);
+
+        // Set the bill for display and clear the current order if it was the one being billed
+        setBillOrder({ ...orderToBill, status: 'completed' }); 
         setIsBillVisible(true);
-        setAllOrders(prev => prev.map(o => o.id === targetOrder.id ? {...o, status: 'completed'} : o));
-        if (currentOrder && currentOrder.id === targetOrder.id) {
+        
+        if (currentOrder && currentOrder.id === orderToBill.id) {
           handleClearOrder();
         }
+
         if(isMobile) setIsOrderSheetOpen(false);
       } catch (error) {
          toast({ variant: "destructive", title: "Failed to Generate Bill", description: "Could not update the order status. Please try again." });
@@ -388,7 +394,11 @@ export default function PosPage() {
   
   const handleViewTableOrder = (order: Order) => {
     setCurrentOrder(order);
-    setOrderType('dine-in'); // Switch to a view where the order can be edited
+    setSelectedTable(String(order.table));
+    setSelectedSeat(String(order.seat));
+    setOrderType('dine-in');
+    
+    // Update URL without reloading the page
     const url = new URL(window.location.href);
     url.searchParams.set('tab', 'dine-in');
     router.replace(url.toString(), { scroll: false });
@@ -457,7 +467,7 @@ export default function PosPage() {
               <p>Rs.{totalWithTax.toFixed(2)}</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Button size="lg" variant="secondary" onClick={() => handleGenerateBill()} disabled={!currentOrder || !currentOrder.status || currentOrder.status !== 'ready'}>Generate Bill</Button>
+              <Button size="lg" variant="secondary" onClick={() => currentOrder && handleGenerateBill(currentOrder)} disabled={!currentOrder || !currentOrder.status || currentOrder.status !== 'ready'}>Generate Bill</Button>
               <Button size="lg" onClick={handleSendToKitchen}>{isOrderSent ? 'Add More Items' : 'Send to Kitchen'}</Button>
             </div>
           </footer>
