@@ -29,6 +29,7 @@ import {
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 interface OrderItem extends MenuItem {
   quantity: number;
@@ -441,9 +442,12 @@ export default function PosPage() {
       <main className="flex flex-col h-full">
           <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 flex-1 flex flex-col">
             <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-              <div>
-                <h1 className="text-3xl font-headline font-bold">Point of Sale</h1>
-                <p className="text-muted-foreground">Select items to build an order.</p>
+              <div className="flex items-center gap-4">
+                <SidebarTrigger className="lg:hidden" />
+                <div>
+                  <h1 className="text-3xl font-headline font-bold">Point of Sale</h1>
+                  <p className="text-muted-foreground">Select items to build an order.</p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                  <Button onClick={handleNewOrder}>New Order</Button>

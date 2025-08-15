@@ -59,7 +59,7 @@ function KaspaLogo() {
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { isMobile, state } = useSidebar();
+  const { isMobile } = useSidebar();
 
   return (
     <Sidebar variant="sidebar" collapsible="icon">
