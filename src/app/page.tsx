@@ -471,11 +471,11 @@ export default function PosPage() {
   );
 
   return (
-    <div className="lg:grid lg:grid-cols-[1fr_380px]">
+    <div className="lg:grid lg:grid-cols-[1fr_380px] h-screen">
       {isBillVisible && billOrder && (
           <Bill order={billOrder} orderItems={billOrderItems} total={billTotal} tax={billTax} subtotal={billSubtotal} onBillClose={handleBillClosed} />
       )}
-      <main className="flex flex-col h-screen">
+      <main className="flex flex-col h-full">
           <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 flex-1 flex flex-col">
             <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
               <div className="flex items-center gap-4">
