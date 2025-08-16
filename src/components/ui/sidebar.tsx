@@ -75,19 +75,15 @@ const SidebarProvider = React.forwardRef<
     // We use openProp and setOpenProp for control from outside the component.
     const [_open, _setOpen] = React.useState(defaultOpen)
     const open = openProp ?? _open
+    
     const setOpen = React.useCallback(
       (value: boolean) => {
-        if (setOpenProp) {
-          setOpenProp(value)
-        } else {
-          _setOpen(value)
-        }
-
-        // This sets the cookie to keep the sidebar state.
+        const callback = setOpenProp ?? _setOpen
+        callback(value)
         document.cookie = `${SIDEBAR_COOKIE_NAME}=${value}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
       },
-      [setOpenProp, _setOpen]
-    )
+      [setOpenProp]
+    );
 
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
@@ -764,3 +760,5 @@ export {
   SidebarTrigger,
   useSidebar,
 }
+
+    
