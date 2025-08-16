@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { PageLayout } from '@/components/layout/page-layout';
 
 const statusColors: Record<string, string> = {
   received: 'bg-blue-500',
@@ -149,11 +150,10 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="p-4 lg:p-6 h-full">
-        <header className="mb-6">
-          <h1 className="text-3xl font-headline font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Loading analytics...</p>
-        </header>
+      <PageLayout
+        title="Dashboard"
+        description="Loading analytics..."
+      >
          <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
              <Skeleton className="h-28" />
@@ -166,17 +166,15 @@ export default function DashboardPage() {
             <Skeleton className="h-[350px]" />
           </div>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="p-4 lg:p-6 h-full overflow-y-auto">
-      <header className="mb-6">
-        <h1 className="text-3xl font-headline font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">A quick overview of your restaurant's performance.</p>
-      </header>
-      
+    <PageLayout
+      title="Dashboard"
+      description="A quick overview of your restaurant's performance."
+    >
       <main className="space-y-6">
         {/* Key Metrics */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -285,6 +283,6 @@ export default function DashboardPage() {
           </Card>
         </div>
       </main>
-    </div>
+    </PageLayout>
   );
 }

@@ -43,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { PageLayout } from '@/components/layout/page-layout';
 
 export default function MenuManagementPage() {
   const [menuItems, setMenuItems] = React.useState<MenuItem[]>([]);
@@ -152,30 +153,29 @@ export default function MenuManagementPage() {
   };
 
   return (
-    <div className="p-4 lg:p-6 h-full flex flex-col">
-      <header className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-headline font-bold">Menu Management</h1>
-          <p className="text-muted-foreground">Add, edit, or remove menu items.</p>
-        </div>
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setIsFormOpen(true)}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add New Item
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Menu Item</DialogTitle>
-            </DialogHeader>
-            <MenuForm
-              onSubmit={handleFormSubmit}
-              onCancel={() => setIsFormOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      </header>
+    <PageLayout
+        title="Menu Management"
+        description="Add, edit, or remove menu items."
+        actions={(
+             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => setIsFormOpen(true)}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add New Item
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Menu Item</DialogTitle>
+                </DialogHeader>
+                <MenuForm
+                  onSubmit={handleFormSubmit}
+                  onCancel={() => setIsFormOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
+        )}
+    >
 
       <div className="flex-grow overflow-auto border rounded-lg">
         {loading ? (
@@ -285,6 +285,6 @@ export default function MenuManagementPage() {
           </Table>
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 }

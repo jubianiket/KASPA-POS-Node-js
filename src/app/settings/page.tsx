@@ -28,6 +28,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
 import { generateTheme, type ThemeColors } from '@/lib/theme';
+import { PageLayout } from '@/components/layout/page-layout';
 
 const predefinedThemes = [
   { name: 'Orange', hsl: '29 100% 50%' },
@@ -105,25 +106,23 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-       <div className="p-4 lg:p-6 h-full">
-        <header className="mb-6">
-          <h1 className="text-3xl font-headline font-bold">Settings</h1>
-          <p className="text-muted-foreground">Manage your restaurant and POS settings.</p>
-        </header>
+       <PageLayout
+          title="Settings"
+          description="Manage your restaurant and POS settings."
+       >
         <div className="space-y-4">
             <Skeleton className="h-10 w-96" />
             <Skeleton className="h-96 w-full" />
         </div>
-      </div>
+      </PageLayout>
     )
   }
 
   return (
-    <div className="p-4 lg:p-6 h-full">
-      <header className="mb-6">
-        <h1 className="text-3xl font-headline font-bold">Settings</h1>
-        <p className="text-muted-foreground">Manage your restaurant and POS settings.</p>
-      </header>
+    <PageLayout
+        title="Settings"
+        description="Manage your restaurant and POS settings."
+    >
       <Tabs defaultValue="restaurant" className="w-full">
         <TabsList className="grid w-full grid-cols-3 max-w-md">
           <TabsTrigger value="restaurant">Restaurant</TabsTrigger>
@@ -245,6 +244,6 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </PageLayout>
   )
 }

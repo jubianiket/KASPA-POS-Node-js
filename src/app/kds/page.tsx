@@ -7,6 +7,7 @@ import { getOrders, updateOrderStatus } from '@/lib/actions';
 import type { Order } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { PageLayout } from '@/components/layout/page-layout';
 
 export default function KdsPage() {
   const [orders, setOrders] = React.useState<Order[]>([]);
@@ -76,11 +77,10 @@ export default function KdsPage() {
 
 
   return (
-    <div className="p-4 lg:p-6 h-full">
-      <header className="mb-6">
-        <h1 className="text-3xl font-headline font-bold">Kitchen Display System</h1>
-        <p className="text-muted-foreground">Real-time order tracking for the kitchen staff.</p>
-      </header>
+    <PageLayout
+      title="Kitchen Display System"
+      description="Real-time order tracking for the kitchen staff."
+    >
       {loading ? (
         <p>Loading orders...</p>
       ) : (
@@ -90,6 +90,6 @@ export default function KdsPage() {
           ))}
         </div>
       )}
-    </div>
+    </PageLayout>
   );
 }

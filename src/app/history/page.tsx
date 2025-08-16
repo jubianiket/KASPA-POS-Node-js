@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { ArrowUpDown, Search } from 'lucide-react';
+import { PageLayout } from '@/components/layout/page-layout';
 
 const statusColors: Record<Order['status'], string> = {
   received: 'bg-blue-500',
@@ -94,12 +95,10 @@ export default function HistoryPage() {
   }, [orders, searchQuery, statusFilter, sortKey, sortDirection]);
 
   return (
-    <div className="p-4 lg:p-6 h-full flex flex-col">
-      <header className="mb-6">
-        <h1 className="text-3xl font-headline font-bold">Order History</h1>
-        <p className="text-muted-foreground">Review past transaction records.</p>
-      </header>
-
+    <PageLayout
+      title="Order History"
+      description="Review past transaction records."
+    >
       <div className="flex flex-col sm:flex-row gap-4 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -175,6 +174,6 @@ export default function HistoryPage() {
           </Table>
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 }
