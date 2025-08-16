@@ -16,23 +16,36 @@ const defaultRedirects: Record<string, string> = {
   head_chef: '/kds',
 };
 
+const createSupabaseMiddlewareClient = (req: NextRequest) => {
+    let response = NextResponse.next({ request: { headers: req.headers } });
+    return createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            auth: {
+                storage: {
+                    getItem: (key) => req.cookies.get(key)?.value,
+                    setItem: (key, value) => {
+                        req.cookies.set({ name: key, value, ...{ path: '/' } });
+                        response = NextResponse.next({ request: { headers: req.headers } });
+                        response.cookies.set({ name: key, value, ...{ path: '/' } });
+                    },
+                    removeItem: (key) => {
+                        req.cookies.set({ name: key, value: '', ...{ path: '/' } });
+                        response = NextResponse.next({ request: { headers: req.headers } });
+                        response.cookies.set({ name: key, value: '', ...{ path: '/' } });
+                    },
+                },
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true,
+            },
+        }
+    );
+}
+
 export async function middleware(request: NextRequest) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      auth: {
-        storage: {
-            getItem: (key) => request.cookies.get(key)?.value,
-            setItem: (key, value) => { /* server-side only */},
-            removeItem: (key) => { /* server-side only */},
-        },
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: true,
-      },
-    }
-  );
+  const supabase = createSupabaseMiddlewareClient(request);
 
   const { data: { session } } = await supabase.auth.getSession();
   
