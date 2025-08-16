@@ -33,8 +33,8 @@ export default async function RootLayout({
             {user && <AppSidebar user={user} />}
             <SidebarInset>
               {children}
-              <Toaster />
             </SidebarInset>
+            <Toaster />
           </SidebarProvider>
         </ThemeProvider>
       </body>
