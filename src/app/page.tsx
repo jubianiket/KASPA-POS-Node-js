@@ -29,7 +29,6 @@ import {
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { SidebarTrigger } from '@/components/ui/sidebar';
 import {
   Accordion,
   AccordionContent,
@@ -38,6 +37,7 @@ import {
 } from "@/components/ui/accordion"
 import { format } from 'date-fns';
 import { TableCard } from '@/components/pos/table-card';
+import { PageLayout } from '@/components/layout/page-layout';
 
 interface OrderItem extends MenuItem {
   quantity: number;
@@ -476,16 +476,11 @@ export default function PosPage() {
           <Bill order={billOrder} orderItems={billOrderItems} total={billTotal} tax={billTax} subtotal={billSubtotal} onBillClose={handleBillClosed} />
       )}
       <main className="flex flex-col h-full">
-          <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 flex-1 flex flex-col">
-            <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger className="lg:hidden" />
-                <div>
-                  <h1 className="text-3xl font-headline font-bold">Point of Sale</h1>
-                  <p className="text-muted-foreground">Select items to build an order.</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
+         <PageLayout
+            title="Point of Sale"
+            description="Select items to build an order."
+            actions={(
+               <div className="flex items-center gap-2">
                  <Button onClick={handleNewOrder}>New Order</Button>
                 <Tabs value={orderType} onValueChange={(v) => {
                   const newOrderType = v as 'dine-in' | 'delivery' | 'active-orders' | 'table-view';
@@ -505,7 +500,9 @@ export default function PosPage() {
                   </TabsList>
                 </Tabs>
               </div>
-            </header>
+            )}
+         >
+          <div className="space-y-4 lg:space-y-6 flex-1 flex flex-col">
 
             {orderType === 'dine-in' && (
               <>
@@ -691,6 +688,7 @@ export default function PosPage() {
               </>
             )}
           </div>
+          </PageLayout>
           {isMobile && currentOrder && currentOrder.items.length > 0 && (
             <Sheet open={isOrderSheetOpen} onOpenChange={setIsOrderSheetOpen}>
               <SheetTrigger asChild>
