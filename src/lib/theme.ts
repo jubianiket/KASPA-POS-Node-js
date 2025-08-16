@@ -28,7 +28,7 @@ function parseHsl(hsl: string): [number, number, number] {
 }
 
 // Function to generate a full theme from a primary color
-export function generateTheme(primaryHsl: string): ThemeColors {
+export function generateTheme(primaryHsl: string): Record<keyof ThemeColors, string> {
   const [h, s, l] = parseHsl(primaryHsl);
 
   // Generate a complementary color for the accent

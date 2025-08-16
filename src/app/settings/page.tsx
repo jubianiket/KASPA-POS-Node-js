@@ -51,7 +51,7 @@ export default function SettingsPage() {
     if (theme.theme_color) {
       const newTheme = generateTheme(theme.theme_color);
       Object.entries(newTheme).forEach(([key, value]) => {
-         document.documentElement.style.setProperty(`--${key}`, value);
+         document.documentElement.style.setProperty(`--${key}`, `hsl(${value})`);
       });
     }
   };
