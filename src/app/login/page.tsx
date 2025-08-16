@@ -1,12 +1,18 @@
 
+'use client';
+
 import { signInWithEmail } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { KaspaLogo } from '@/components/layout/sidebar';
+import { useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const errorMessage = searchParams.get('message');
+
   return (
     <main className="flex items-center justify-center min-h-screen bg-background">
       <Card className="w-full max-w-sm">
@@ -29,6 +35,9 @@ export default function LoginPage() {
               <Label htmlFor="password">Password</Label>
               <Input id="password" name="password" type="password" required />
             </div>
+            {errorMessage && (
+                <p className="text-sm font-medium text-destructive">{errorMessage}</p>
+            )}
             <Button type="submit" className="w-full">Sign In</Button>
           </form>
         </CardContent>
