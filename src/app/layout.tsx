@@ -5,17 +5,20 @@ import { AppSidebar } from '@/components/layout/sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
+import { getCurrentUser } from '@/lib/auth';
 
 export const metadata: Metadata = {
   title: 'KASPA POS',
   description: 'Restaurant POS + Kitchen Display System',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCurrentUser();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -27,7 +30,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <ThemeProvider>
           <SidebarProvider>
-            <AppSidebar />
+            {user && <AppSidebar user={user} />}
             <SidebarInset>
               {children}
               <Toaster />

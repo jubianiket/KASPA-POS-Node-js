@@ -3,11 +3,33 @@
 
 import { MenuItem, Order, RestaurantSettings } from './data';
 import { createClient } from '@supabase/supabase-js'
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+const createSupabaseServerClient = () => {
+    const { cookies } = require('next/headers');
+    return createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            auth: {
+                storage: {
+                    getItem: (key) => cookies().get(key)?.value,
+                    setItem: (key, value) => cookies().set(key, value),
+                    removeItem: (key) => cookies().delete(key),
+                },
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true,
+            },
+        }
+    );
+};
 
 
 export async function getMenuItems(): Promise<MenuItem[]> {
@@ -202,4 +224,34 @@ export async function updateSettings(settingsData: Partial<RestaurantSettings>) 
         throw new Error(`Error updating settings: ${error.message}`);
     }
     return data;
+}
+
+
+export async function signInWithEmail(formData: FormData) {
+    const supabase = createSupabaseServerClient();
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    if (!email || !password) {
+        return { error: { message: 'Email and password are required' } };
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+    });
+
+    if (error) {
+        console.error('Sign in error:', error);
+        return { error: { message: `Sign in failed: ${error.message}` } };
+    }
+
+    revalidatePath('/', 'layout');
+    redirect('/');
+}
+
+export async function signOut() {
+    const supabase = createSupabaseServerClient();
+    await supabase.auth.signOut();
+    redirect('/login');
 }

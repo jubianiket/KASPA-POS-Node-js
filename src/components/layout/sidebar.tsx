@@ -28,17 +28,20 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Separator } from '../ui/separator';
+import type { UserWithRole } from '@/lib/auth';
+import { signOut } from '@/lib/actions';
 
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/', label: 'POS', icon: LayoutGrid },
-  { href: '/kds', label: 'KDS', icon: Soup },
-  { href: '/menu', label: 'Menu Board', icon: BookOpenText },
-  { href: '/history', label: 'Order History', icon: History },
-  { href: '/settings', label: 'Settings', icon: Settings },
+
+const allNavItems = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, role: 'admin' },
+  { href: '/', label: 'POS', icon: LayoutGrid, role: 'cashier' },
+  { href: '/kds', label: 'KDS', icon: Soup, role: 'head_chef' },
+  { href: '/menu', label: 'Menu Board', icon: BookOpenText, role: 'admin' },
+  { href: '/history', label: 'Order History', icon: History, role: 'admin' },
+  { href: '/settings', label: 'Settings', icon: Settings, role: 'admin' },
 ];
 
-function KaspaLogo() {
+export function KaspaLogo() {
   return (
     <svg
       width="24"
@@ -57,7 +60,7 @@ function KaspaLogo() {
 }
 
 
-export function AppSidebar() {
+export function AppSidebar({ user }: { user: UserWithRole | null }) {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
 
@@ -66,6 +69,16 @@ export function AppSidebar() {
       setOpenMobile(false);
     }
   };
+
+  const navItems = React.useMemo(() => {
+    if (user?.role === 'admin') {
+      return allNavItems;
+    }
+    return allNavItems.filter(item => item.role === user?.role);
+  }, [user]);
+
+  const userInitial = user?.email ? user.email.charAt(0).toUpperCase() : '?';
+  const userRole = user?.role ? user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Guest';
 
   return (
     <Sidebar variant="sidebar" collapsible="icon">
@@ -109,18 +122,20 @@ export function AppSidebar() {
           className="flex items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm"
         >
           <Avatar className="h-8 w-8">
-            <AvatarImage src="https://placehold.co/40x40.png" alt="User" data-ai-hint="user avatar" />
-            <AvatarFallback>JD</AvatarFallback>
+            <AvatarImage src="" alt="User" />
+            <AvatarFallback>{userInitial}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col truncate group-data-[collapsible=icon]:hidden">
-             <span className="font-semibold text-sidebar-foreground">Jane Doe</span>
-             <span className="text-xs text-muted-foreground">Cashier</span>
+             <span className="font-semibold text-sidebar-foreground">{user?.email}</span>
+             <span className="text-xs text-muted-foreground">{userRole}</span>
           </div>
         </div>
-        <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
-          <LogOut className="mr-2 h-4 w-4" />
-          <span className="group-data-[collapsible=icon]:hidden">Logout</span>
-        </Button>
+        <form action={signOut}>
+            <Button type="submit" variant="ghost" className="w-full justify-start text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span className="group-data-[collapsible=icon]:hidden">Logout</span>
+            </Button>
+        </form>
       </SidebarFooter>
     </Sidebar>
   );
