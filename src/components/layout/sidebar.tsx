@@ -71,14 +71,25 @@ export function AppSidebar({ user }: { user: UserWithRole | null }) {
   };
 
   const navItems = React.useMemo(() => {
-    if (user?.role === 'admin') {
+    if (!user) return [];
+    if (user.role === 'admin') {
       return allNavItems;
     }
-    return allNavItems.filter(item => item.role === user?.role);
+    // Admins get all nav items, other roles get their specific items + admin items they are allowed to see
+    const userSpecificItems = allNavItems.filter(item => item.role === user.role);
+    const adminPermittedItems = allNavItems.filter(item => {
+        return rolePermissions[user.role as keyof typeof rolePermissions]?.includes(item.href) && !userSpecificItems.find(si => si.href === item.href)
+    })
+    
+    // A bit of a hack to ensure POS is always first for cashiers and KDS is first for chefs
+    if (user.role === 'cashier') return allNavItems.filter(i => i.role === 'cashier');
+    if (user.role === 'head_chef') return allNavItems.filter(i => i.role === 'head_chef');
+
+    return userSpecificItems.concat(adminPermittedItems);
   }, [user]);
 
   const userInitial = user?.email ? user.email.charAt(0).toUpperCase() : '?';
-  const userRole = user?.role ? user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Guest';
+  const userRole = user?.role ? user.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Guest';
 
   return (
     <Sidebar variant="sidebar" collapsible="icon">
@@ -91,7 +102,7 @@ export function AppSidebar({ user }: { user: UserWithRole | null }) {
                     <KaspaLogo />
                   </div>
                   <span className="font-bold text-lg font-headline text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-                    KASPA POS
+                    SwiftServe
                   </span>
                </SidebarMenuButton>
              </SidebarMenuItem>
@@ -140,3 +151,9 @@ export function AppSidebar({ user }: { user: UserWithRole | null }) {
     </Sidebar>
   );
 }
+
+const rolePermissions: Record<string, string[]> = {
+  admin: ['/dashboard', '/', '/kds', '/menu', '/history', '/settings'],
+  cashier: ['/'],
+  head_chef: ['/kds'],
+};

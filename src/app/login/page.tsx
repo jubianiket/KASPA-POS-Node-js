@@ -16,7 +16,7 @@ export default function LoginPage() {
                <KaspaLogo />
             </div>
           </div>
-          <CardTitle className="font-headline text-2xl">Welcome to KASPA POS</CardTitle>
+          <CardTitle className="font-headline text-2xl">Welcome to SwiftServe POS</CardTitle>
           <CardDescription>Enter your credentials to access your station.</CardDescription>
         </CardHeader>
         <CardContent>

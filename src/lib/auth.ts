@@ -17,8 +17,14 @@ const createSupabaseServerClient = () => {
             auth: {
                 storage: {
                     getItem: (key) => cookies().get(key)?.value,
-                    setItem: (key, value) => cookies().set(key, value),
-                    removeItem: (key) => cookies().delete(key),
+                    setItem: (key, value) => {
+                        const cookieStore = cookies();
+                        cookieStore.set(key, value);
+                    },
+                    removeItem: (key) => {
+                        const cookieStore = cookies();
+                        cookieStore.delete(key);
+                    },
                 },
                 autoRefreshToken: true,
                 persistSession: true,

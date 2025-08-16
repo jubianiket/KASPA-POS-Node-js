@@ -8,7 +8,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { getCurrentUser } from '@/lib/auth';
 
 export const metadata: Metadata = {
-  title: 'KASPA POS',
+  title: 'SwiftServe POS',
   description: 'Restaurant POS + Kitchen Display System',
 };
 
