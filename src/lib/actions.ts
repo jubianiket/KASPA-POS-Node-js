@@ -5,15 +5,17 @@ import { MenuItem, Order, RestaurantSettings } from './data';
 import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 
 // Admin client for write operations
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabaseAdmin = process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.SUPABASE_SERVICE_ROLE_KEY.includes('YOUR_SUPABASE_SERVICE_ROLE_KEY')
+  ? createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+  : null;
 
 const createSupabaseServerClient = () => {
-    const { cookies } = require('next/headers');
     return createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -21,7 +23,7 @@ const createSupabaseServerClient = () => {
             auth: {
                 storage: {
                     getItem: (key) => cookies().get(key)?.value,
-                    setItem: (key, value) => cookies().set(key, value),
+                    setItem: (key, value) => cookies().set(key, value, { path: '/' }),
                     removeItem: (key) => cookies().delete(key),
                 },
                 autoRefreshToken: true,
@@ -39,7 +41,16 @@ const getSupabaseHeaders = () => {
     };
 }
 
+const isSupabaseConfigured = () => {
+    return process.env.NEXT_PUBLIC_SUPABASE_URL &&
+           !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('YOUR_SUPABASE_URL') &&
+           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+           !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.includes('YOUR_SUPABASE_ANON_KEY');
+}
+
 export async function getMenuItems(): Promise<MenuItem[]> {
+  if (!isSupabaseConfigured()) return [];
+  
   const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/menu_items?select=id,name,rate,category,portion&order=name.asc`, {
     headers: getSupabaseHeaders(),
     next: { revalidate: 60 } // Revalidate every 60 seconds
@@ -63,6 +74,7 @@ export async function getMenuItems(): Promise<MenuItem[]> {
 }
 
 export async function createMenuItem(itemData: Omit<MenuItem, 'id'>) {
+    if (!supabaseAdmin) throw new Error('Supabase admin client not initialized.');
     const { data, error } = await supabaseAdmin
         .from('menu_items')
         .insert([{ name: itemData.name, rate: itemData.price, category: itemData.category, portion: itemData.portion }])
@@ -77,6 +89,7 @@ export async function createMenuItem(itemData: Omit<MenuItem, 'id'>) {
 }
 
 export async function updateMenuItem(id: number, itemData: Omit<MenuItem, 'id'>) {
+    if (!supabaseAdmin) throw new Error('Supabase admin client not initialized.');
     const { data, error } = await supabaseAdmin
         .from('menu_items')
         .update({ name: itemData.name, rate: itemData.price, category: itemData.category, portion: itemData.portion })
@@ -92,6 +105,7 @@ export async function updateMenuItem(id: number, itemData: Omit<MenuItem, 'id'>)
 }
 
 export async function deleteMenuItem(id: number) {
+    if (!supabaseAdmin) throw new Error('Supabase admin client not initialized.');
     const { error } = await supabaseAdmin
         .from('menu_items')
         .delete()
@@ -107,6 +121,7 @@ export async function deleteMenuItem(id: number) {
 
 
 export async function createOrder(orderData: any) {
+  if (!supabaseAdmin) throw new Error('Supabase admin client not initialized.');
   try {
     const { data, error } = await supabaseAdmin
       .from('orders')
@@ -129,6 +144,8 @@ export async function createOrder(orderData: any) {
 }
 
 export async function getOrders(): Promise<Order[]> {
+  if (!isSupabaseConfigured()) return [];
+
   const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/orders?select=*&order=date.desc`, {
     headers: getSupabaseHeaders(),
     next: { revalidate: 10 } // Revalidate every 10 seconds for fresh orders
@@ -160,6 +177,8 @@ export async function getOrders(): Promise<Order[]> {
 }
 
 export async function updateOrderStatus(orderId: string, status: Order['status'], orderData?: any) {
+  if (!supabaseAdmin) throw new Error('Supabase admin client not initialized.');
+  
   const updatePayload: { [key: string]: any } = orderData ? { ...orderData } : {};
   updatePayload.status = status;
 
@@ -189,6 +208,8 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
 }
 
 export async function getSettings(): Promise<RestaurantSettings | null> {
+    if (!isSupabaseConfigured()) return null;
+
     const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/restaurant_settings?id=eq.1&select=*`, {
         headers: getSupabaseHeaders(),
         next: { revalidate: 3600 } // Revalidate every hour
@@ -216,6 +237,11 @@ export async function getSettings(): Promise<RestaurantSettings | null> {
         };
     }
 
+    if (!supabaseAdmin) {
+        console.error('Supabase admin client not initialized. Cannot create default settings.');
+        return null;
+    }
+
     // If no settings, create default ones
     const { data: insertData, error: insertError } = await supabaseAdmin
         .from('restaurant_settings')
@@ -240,6 +266,7 @@ export async function getSettings(): Promise<RestaurantSettings | null> {
 }
 
 export async function updateSettings(settingsData: Partial<RestaurantSettings>) {
+    if (!supabaseAdmin) throw new Error('Supabase admin client not initialized.');
     const { data, error } = await supabaseAdmin
         .from('restaurant_settings')
         .update(settingsData)
@@ -256,6 +283,10 @@ export async function updateSettings(settingsData: Partial<RestaurantSettings>) 
 
 
 export async function signInWithEmail(formData: FormData) {
+    if (!isSupabaseConfigured()) {
+        redirect('/login?message=Supabase is not configured on the server.');
+        return;
+    }
     const supabase = createSupabaseServerClient();
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
@@ -279,6 +310,7 @@ export async function signInWithEmail(formData: FormData) {
 }
 
 export async function signOut() {
+    if (!isSupabaseConfigured()) return;
     const supabase = createSupabaseServerClient();
     await supabase.auth.signOut();
     redirect('/login');
